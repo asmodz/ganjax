@@ -29,7 +29,7 @@ LD=ld
 LD_SCRIPT_PATH=$(KERNEL_PATH)/kernel.ld
 LD_FLAGS = -nostdlib --nmagic 
 LD_LINKLIB = $(BINARY_PATH)/tinylibc.o \
-	$(BINARY_PATH)/_int_k_io.o
+    $(BINARY_PATH)/_int_k_io.o
 
 OBJCOPY=objcopy
 OBJCOPY_FLAGS=-O binary
@@ -37,37 +37,37 @@ OBJCOPY_FLAGS=-O binary
 all: bootloader _internal_kernel_io tinyc kernel image
 
 bootloader: $(BOOT_PATH)/$(BOOTLOADER_FILE)
-	$(ASM) $(ASM_FLAGS) -o $(BINARY_PATH)/$(BOOTLOADER_NAME) \
-	$(BOOT_PATH)/$(BOOTLOADER_FILE)
+    $(ASM) $(ASM_FLAGS) -o $(BINARY_PATH)/$(BOOTLOADER_NAME) \
+    $(BOOT_PATH)/$(BOOTLOADER_FILE)
 
 kernel:
-	$(CC) -isysroot=$(SYSROOT_INCLUDE) -I $(SYSROOT_INCLUDE) \
-	-c $(CLANG_FLAGS) $(KERNEL_PATH)/kernel.c -o $(BINARY_PATH)/kernel.o 
-	
-	$(LD) -static -T $(LD_SCRIPT_PATH) \
-	$(LD_FLAGS) -o $(BINARY_PATH)/kernel.elf $(BINARY_PATH)/kernel.o \
-	$(LD_LINKLIB)
-	
-	
-	$(OBJCOPY) $(OBJCOPY_FLAGS) bin/kernel.elf $(BINARY_PATH)/$(KERNEL_BIN)
-	
-	#echo "objdump -D -z -b binary -M intel -m i8086 bin/KERNEL.SYS" > w00t      
+    $(CC) -isysroot=$(SYSROOT_INCLUDE) -I $(SYSROOT_INCLUDE) \
+    -c $(CLANG_FLAGS) $(KERNEL_PATH)/kernel.c -o $(BINARY_PATH)/kernel.o 
+    
+    $(LD) -static -T $(LD_SCRIPT_PATH) \
+    $(LD_FLAGS) -o $(BINARY_PATH)/kernel.elf $(BINARY_PATH)/kernel.o \
+    $(LD_LINKLIB)
+    
+    
+    $(OBJCOPY) $(OBJCOPY_FLAGS) bin/kernel.elf $(BINARY_PATH)/$(KERNEL_BIN)
+    
+    #echo "objdump -D -z -b binary -M intel -m i8086 bin/KERNEL.SYS" > w00t      
 addit: _internal_kernel_io
 
 image:
-	dd if=/dev/zero of=$(BINARY_PATH)/temp_img count=2879 bs=512
-	cat $(BINARY_PATH)/$(BOOTLOADER_NAME) | cat - $(BINARY_PATH)/temp_img > temp && mv temp $(BINARY_PATH)/temp_img
-	mcopy -i $(BINARY_PATH)/temp_img $(BINARY_PATH)/$(KERNEL_BIN) ::/
-	mdir  -i $(BINARY_PATH)/temp_img
-	cat $(BINARY_PATH)/temp_img > $(BINARY_PATH)/$(IMAGE_NAME)
-	rm $(BINARY_PATH)/temp_img
-	
+    dd if=/dev/zero of=$(BINARY_PATH)/temp_img count=2879 bs=512
+    cat $(BINARY_PATH)/$(BOOTLOADER_NAME) | cat - $(BINARY_PATH)/temp_img > temp && mv temp $(BINARY_PATH)/temp_img
+    mcopy -i $(BINARY_PATH)/temp_img $(BINARY_PATH)/$(KERNEL_BIN) ::/
+    mdir  -i $(BINARY_PATH)/temp_img
+    cat $(BINARY_PATH)/temp_img > $(BINARY_PATH)/$(IMAGE_NAME)
+    rm $(BINARY_PATH)/temp_img
+    
 _internal_kernel_io:
-	$(CC) -isysroot=$(SYSROOT_INCLUDE) -I $(SYSROOT_INCLUDE) -c $(CLANG_FLAGS) src/lib/kernel/io/io.c -o $(BINARY_PATH)/_int_k_io.o
-	
+    $(CC) -isysroot=$(SYSROOT_INCLUDE) -I $(SYSROOT_INCLUDE) -c $(CLANG_FLAGS) src/lib/kernel/io/io.c -o $(BINARY_PATH)/_int_k_io.o
+    
 tinyc:
-	clang-3.6 -isysroot=$(SYSROOT_INCLUDE) -I $(SYSROOT_INCLUDE) -c $(CLANG_FLAGS) src/lib/tinylibc.c -o bin/tinylibc.o
+    clang-3.6 -isysroot=$(SYSROOT_INCLUDE) -I $(SYSROOT_INCLUDE) -c $(CLANG_FLAGS) src/lib/tinylibc.c -o bin/tinylibc.o
 
 clean:
-	rm $(BINARY_PATH)/*
+    rm $(BINARY_PATH)/*
 

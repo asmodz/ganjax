@@ -16,20 +16,20 @@
 #define _nop_sled _asm("nop");_asm("nop");_asm("nop");_asm("nop");
 
 #define SETUP_REGISTERS() asm ( \
-	__INTEL__ \
-	"mov ax, cs;" \
-	"mov ds, ax;" \
-	"mov fs, ax;" \
-	"mov gs, ax;" \
-	"mov ax, 0x0000;" \
-	"mov ss, ax;" \
-	"mov ax, 0xffff;" \
-	"mov sp, ax;" \
+    __INTEL__ \
+    "mov ax, cs;" \
+    "mov ds, ax;" \
+    "mov fs, ax;" \
+    "mov gs, ax;" \
+    "mov ax, 0x0000;" \
+    "mov ss, ax;" \
+    "mov ax, 0xffff;" \
+    "mov sp, ax;" \
 )
 
 #define JMP_TO_KERNEL_LOOP() asm ( \
-	__INTEL__   \
-	"jmp main;" \
+    __INTEL__   \
+    "jmp main;" \
 );
 
 #endif
