@@ -1,4 +1,5 @@
 bochs
 bin
 w00t
-
+.gitignore
+redirect.sh
