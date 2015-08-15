@@ -1,1 +1,2 @@
-Hobby 16-bit OS written in LLVM/Clang
+Hobby 16-bit OS written in C with OW
+
