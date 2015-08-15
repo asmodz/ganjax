@@ -1,10 +1,10 @@
-#ifndef KEYBOARD_DEFS
-#define KEYBOARD_DEFS
-#include <stdint.h>
+#ifndef GANJAX_KEYBOARD_DEFS
+#define GANJAX_KEYBOARD_DEFS
 
-#define KEY_ESC 		0x00
+/** Keyboard scancodes **/
+#define KEY_ESC         0x01
 #define KEY_BACKSPACE   0x0E
-#define KEY_TAB			0x0F
+#define KEY_TAB         0x0F
 #define KEY_ENTER       0x1C
 #define KEY_CTRL        0x1D
 #define KEY_LSHIFT      0x2A
@@ -14,7 +14,7 @@
 #define KEY_SPACE       0x39
 #define KEY_CAPS        0x3A
 #define KEY_F1          0x3B
-#define KEY_F2			0x3C
+#define KEY_F2          0x3C
 #define KEY_F3          0x3D
 #define KEY_F4          0x3E
 #define KEY_F5          0x3F
@@ -39,13 +39,15 @@
 #define KEY_INS         0x52
 #define KEY_DEL         0x53
 
-union key_t {	
-  uint16_t slot; 
-  struct key_byte_t {
-    char ascii, code;  
-  } byte;
+/** Keyboard key struct **/
+union key_t
+{
+	int k;
+	struct Byte{
+		char ascii, scan;
+	}byte;
 };
 
-typedef union key_t key_t;
+#define key_t union key_t
 
 #endif

@@ -1,46 +1,78 @@
 #include <kernel/io/io.h>
-
-void putc(uint8_t c){
-    asm volatile("int $0x10" : : "a"(0x0e00 | (char) c ));
-}
-
-void puts(const char *__s){
-    while(*__s){
-        putc(*__s);
-        __s++;
+char * itoa( int value, char * str, int base ){
+    char * rc;
+    char * ptr;
+    char * low;
+    if ( base < 2 || base > 36 )
+    {
+        *str = '\0';
+        return str;
     }
+    rc = ptr = str;
+    if ( value < 0 && base == 10 ){
+        *ptr++ = '-';
+    }
+    low = ptr;
+    do{
+        *ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz"[35 + value % base];
+        value /= base;
+    } while ( value );
+    *ptr-- = '\0';
+    while ( low < ptr ){
+        char tmp = *low;
+        *low++ = *ptr;
+        *ptr-- = tmp;
+    }
+    return rc;
 }
 
-key_t getch() {
-     key_t key;
-     uint16_t key_byte;
-     asm volatile("int $0x16" : : "a"(0x0000));
-     asm volatile("movw %%ax, %0" : "=r"(key_byte) : : "ax");
-     key.slot = key_byte;
-     return key;
+void putc(char c){
+	_asm{
+		mov ah, 0x0e
+		mov al, c
+		int 0x10
+	}
+}
+void putc_at(cursor_pos_t pos){
 }
 
+void puts(const char* __s){
+	while(*__s != 0){
+		putc(*__s);
+		__s++;
+	}
+}
+
+void print_int(int v, int base){
+	static char INT_CV_BUFFER[6];
+	itoa(v, INT_CV_BUFFER, base);
+	puts(INT_CV_BUFFER);
+}
 
 void get_string(char* __s){
-    key_t key;
-    while(1){
-        key = getch();
-        putc(key.byte.ascii);
-        if(key.byte.code == KEY_ENTER){
-            puts("Enterek\r\n");
-        }
 
-    }
+	while(1){
+		key_t k = get_key();
+		cursor_pos_t pos = get_cursor_position();
+		if(k.byte.ascii != KEY_ENTER && k.byte.ascii != KEY_BACKSPACE){
+			
+		}
+		else if(k.byte.ascii == KEY_ENTER){
+		}
+		else if(k.byte.ascii == KEY_BACKSPACE){
+		}
+	}
+	
 }
 
-
-
-uint16_t strlen(const char* __s){
-    
-    uint16_t length = 0;
-    while(*__s){
-        length++;
-        __s++;
-    }
-    return length;
+key_t get_key(void){
+	key_t key;
+	int kv = 0;
+	_asm{
+		mov ax, 0x0000
+		int 0x16
+		mov kv, ax
+	}
+	key.k = kv;
+	return key;
 }

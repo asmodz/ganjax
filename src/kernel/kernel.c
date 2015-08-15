@@ -1,32 +1,15 @@
 #include <kernel/io/io.h>
+#include <kernel/io/terminal.h>
 
-SETUP_REGISTERS();
-JMP_TO_KERNEL_LOOP();
-
-
-void _Noreturn main()
+void kmain(void)
 {
-    /*_nop_sled;
-    _asmv
-    (   
-        ".intel_syntax noprefix;"
-        "mov ax, 0xb700;"
-        "mov ds, ax;"
-    );
-    short* video_memory = (short*) 0x1000;
-    *video_memory = 0xFaFa;
-    _nop_sled;
-    _asmv
-    (   
-        ".intel_syntax noprefix;"
-        "mov ax, 0x0050;"
-        "mov ds, ax;"
-    );*/
-    
-    puts("Hello world from kernel :)");
-    while(1)
-    {
-    
-        
-    }
+	short x = 0;
+	char buffer[30];
+	clrscr(' ', color_entry(COLOR_RED, COLOR_CYAN));
+	
+	while(1){	
+		get_string(buffer);
+		puts("\r\n");
+		puts(buffer);
+	}
 }
