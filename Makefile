@@ -25,7 +25,8 @@ WATCOM_LINK_SCRIPT=$(KERNEL_PATH)/watcom_link.lnk
 WLOG=-fr=watcom_logs
 WOUT=-fo=bin
 #============================================
-all: bootloader startup internals kernel_binary image
+
+all: bootloader startup internals usermode kernel_binary image
 
 bootloader: 
 	@echo "======================BOOT================================"
@@ -37,7 +38,6 @@ kernel:
 	@echo "=========================================================="
 startup:
 	@echo "=====================STARTUP==============================="
-	#$(WATCOM_ASM) $(KERNEL_PATH)/wstartup.asm -fo=$(BIN_PATH)/wstartup.o
 	nasm $(KERNEL_PATH)/wstartup.asm -f obj -o $(BIN_PATH)/wstartup.o
 	@echo "=========================================================="
 kernel_binary: kernel
@@ -46,6 +46,7 @@ kernel_binary: kernel
 	@echo "=========================================================="
 	
 internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_memory
+usermode: _user_stringlib
 
 #============================================
 _kernel_internal_io: 
@@ -60,6 +61,13 @@ _kernel_internal_memory:
 	@echo "=========================MEMO==============================="
 	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/memory.o $(LIB_PATH)/kernel/asm/memory.c
 	@echo "=========================================================="
+	
+#============================================
+_user_stringlib:
+	@echo "=========================STRING============================"
+	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/string.errorz $(WOUT)/string.o $(LIB_PATH)/usr/string.c
+	@echo "=========================================================="
+
 #============================================
 image:
 	@echo "=========================IMAGE==============================="

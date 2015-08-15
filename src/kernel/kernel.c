@@ -1,16 +1,17 @@
 #include <kernel/io/io.h>
 #include <kernel/io/terminal.h>
-
+#include <usr/string.h>
 void kmain(void)
 {
-	int x = 300;
-	char buffer[30];
+	char buffer[15];
+	
 	init_terminal();
-
 	while(1){	
+		puts(">");
 		get_string(buffer);
-		
-		puts(buffer);
+
+	
 		puts("\r\n");
+		
 	}
 }
