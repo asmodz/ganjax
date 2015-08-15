@@ -48,6 +48,7 @@ cursor_pos_t get_cursor_position(){
 	char row, col;
 	_asm{
 		mov ah, 0x3
+		mov bh, 0x0
 		int 0x10
 		mov row, dh
 		mov col, dl
@@ -71,6 +72,13 @@ void put_video_memory(char x, char y, short byte){
 		mov ax, cs
 		mov ds, ax
 	}
+}
+
+void init_terminal(){
+	cursor_position.row = 0;
+	cursor_position.col = 0;
+	set_cursor_position(cursor_position);
+	clrscr(' ', color_entry(COLOR_WHITE, COLOR_BLACK));
 }
 
 void clrscr(char chr, char color){

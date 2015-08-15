@@ -33,8 +33,6 @@ void putc(char c){
 		int 0x10
 	}
 }
-void putc_at(cursor_pos_t pos){
-}
 
 void puts(const char* __s){
 	while(*__s != 0){
@@ -50,19 +48,34 @@ void print_int(int v, int base){
 }
 
 void get_string(char* __s){
-
+	key_t k;
+	short entry;
+	cursor_pos_t pos;
 	while(1){
-		key_t k = get_key();
-		cursor_pos_t pos = get_cursor_position();
-		if(k.byte.ascii != KEY_ENTER && k.byte.ascii != KEY_BACKSPACE){
-			
+		k = get_key();
+		pos = get_cursor_position();
+		if(k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE && pos.col != INPUT_STRING_MAX_LENGTH){
+			entry = vga_entry( k.byte.ascii, color_entry(COLOR_WHITE, COLOR_BLACK) );
+			put_video_memory(pos.col, pos.row, entry);
+			pos.col += 1;
+			set_cursor_position(pos);
+			*__s = k.byte.ascii;
+			__s++;
 		}
-		else if(k.byte.ascii == KEY_ENTER){
+		else if(k.byte.scan == KEY_ENTER){
+			*__s = '\0';
+			puts("\r\n");
+			return;
 		}
-		else if(k.byte.ascii == KEY_BACKSPACE){
+		else if(k.byte.scan == KEY_BACKSPACE && pos.col != 0){
+			__s--;
+			*__s = '\0';
+			entry = vga_entry( ' ', color_entry(COLOR_WHITE, COLOR_BLACK));
+			pos.col -= 1;
+			set_cursor_position(pos);
+			put_video_memory(pos.col, pos.row, entry);
 		}
 	}
-	
 }
 
 key_t get_key(void){

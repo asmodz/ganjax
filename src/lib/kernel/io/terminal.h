@@ -1,5 +1,6 @@
 #ifndef GANJAX_TERMINAL_H
 #define GANJAX_TERMINAL_H
+
 enum VIDEO_MODE{ 
 	TEXT_40x25_16_8 = 0x00, 	/** 40x25   16 Colors 8 Pages **/
 	TEXT_80x25_16_8 = 0x03, 	/** 80x25   16 Colors 8 Pages **/
@@ -48,6 +49,7 @@ void set_video_mode(VIDEO_MODE mode);
 
 void put_video_memory(char x, char y, short byte);
 void clrscr(char chr, char color);
+void init_terminal();
 char color_entry(enum VGA_COLOR fg, enum VGA_COLOR bg);
 short vga_entry(char c, char color);
 #endif

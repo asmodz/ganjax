@@ -3,13 +3,14 @@
 
 void kmain(void)
 {
-	short x = 0;
+	int x = 300;
 	char buffer[30];
-	clrscr(' ', color_entry(COLOR_RED, COLOR_CYAN));
-	
+	init_terminal();
+
 	while(1){	
 		get_string(buffer);
-		puts("\r\n");
+		
 		puts(buffer);
+		puts("\r\n");
 	}
 }
