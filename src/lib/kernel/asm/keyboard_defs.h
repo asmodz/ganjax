@@ -42,10 +42,10 @@
 /** Keyboard key struct **/
 union key_t
 {
-	int k;
-	struct Byte{
-		char ascii, scan;
-	}byte;
+    int k;
+    struct Byte{
+        char ascii, scan;
+    }byte;
 };
 
 #define key_t union key_t
