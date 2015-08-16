@@ -33,7 +33,11 @@ void get_string(char* __s){
     while(1){
         k = get_key();
         pos = get_cursor_position();
-        if(k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE && pos.col != INPUT_STRING_MAX_LENGTH){
+        
+        /*** uuuuuugly ;/ ***/
+        if(k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE &&
+           pos.col != INPUT_STRING_MAX_LENGTH &&
+		   (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE){
             entry = vga_entry( k.byte.ascii, color_entry(COLOR_WHITE, COLOR_BLACK) );
             put_video_memory(pos.col, pos.row, entry);
             pos.col += 1;
@@ -41,7 +45,7 @@ void get_string(char* __s){
             *__s = k.byte.ascii;
             __s++;
         }
-        else if(k.byte.scan == KEY_ENTER){
+        else if(k.byte.scan == KEY_ENTER && pos.col > 1){
             *__s = '\0';
             puts("\r\n");
             return;
@@ -55,37 +59,6 @@ void get_string(char* __s){
             put_video_memory(pos.col, pos.row, entry);
         }
     }
-}
-
-void print_regs(regs_t regs){
-	char rn[3] = "\r\n";
-	char buff[15];
-	puts_attrib("AX:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.ax, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("BX:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.bx, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("CX:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.cx, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("DX:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.dx, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("CS:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.cs, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("DS:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.ds, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("SS:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.ss, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("ES:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.es, buff,  16), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
-	
-	puts_attrib("FL:", color_entry(COLOR_RED, COLOR_BLACK));
-	puts_attrib(itoa(regs.flags, buff,  2), color_entry(COLOR_CYAN, COLOR_BLACK));puts(rn);
 }
 
 void write_string_at(const char *__s, short x, short y, char attribs){
@@ -113,26 +86,30 @@ chs_t lba_to_chs(short lba){
 
 char read_sectors(short offset_, short lba, short count)
 {
+	_asm
+	{
+		mov ax, RAM_SEGMENT
+		mov es, ax
+	}
+	
     while(count--)
     {
         char c,h,s;
         short flags_reg;
-        short offst;
-        offst = offset_ + BASE_OFFSET;
         c =       lba / ( SECTORS_PER_TRACK * NUMBER_OF_HEADS ); 
         h =     ( lba / SECTORS_PER_TRACK ) % NUMBER_OF_HEADS;
         s =     ( lba % SECTORS_PER_TRACK ) + 1;
         _asm
         {
-            mov ah, 0x02
-            mov al, 0x01
-            mov ch, c
+            mov ah, 0x02		/** Przerwanie czytaj sektory BIOSa **/
+            mov al, 0x01		/** Czytaj jeden sektor **/
+            mov ch, c			/** Koordy na dyskietce (CHS) **/
             mov dh, h
             mov cl, s
-            mov dl, 0
-            mov bx, offst;
+            mov dl, 0			/** Numer stacji dyskietek **/
+            mov bx, offset_  	/** Offset względem 0x07e0 **/
             int 0x13 
-            pushf
+            pushf			
             pop flags_reg;
         }
         if(CHECK_BIT(flags_reg, CARRY_FLAG) ){

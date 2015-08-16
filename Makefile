@@ -45,7 +45,7 @@ kernel_binary: kernel
 	$(WATCOM_LINK) @$(WATCOM_LINK_SCRIPT)
 	@echo "=========================================================="
 	
-internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_asm
+internals:	_kernel_internal_io _kernel_internal_termio 
 usermode: _user_stringlib
 
 #============================================
@@ -57,11 +57,7 @@ _kernel_internal_termio:
 	@echo "=========================TERM==============================="
 	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/termio.errorz $(WOUT)/termio.o $(LIB_PATH)/kernel/io/terminal.c
 	@echo "=========================================================="
-_kernel_internal_asm:
-	@echo "=========================MEMO==============================="
-	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/asm.o $(LIB_PATH)/kernel/asm/asm.c
-	@echo "=========================================================="
-	
+
 #============================================
 _user_stringlib:
 	@echo "=========================STRING============================"
