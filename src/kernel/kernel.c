@@ -7,7 +7,8 @@ void kmain(void)
 	char buffer[15];
 
 	init_terminal();
-	read_sectors(0, 33, 1);
+	rw_sectors(0, 33, 4, 1);
+	rw_sectors(0, 60, 4, 0);
 	
 
 

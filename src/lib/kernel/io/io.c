@@ -26,6 +26,12 @@ void puts_attrib(const char *__s , short attrib){
     }
 }
 
+void print_int(short i , char base){
+	static char buffer[10];
+	itoa(i, buffer, base);
+	puts(buffer);
+}
+
 void get_string(char* __s){
     key_t k;
     short entry;
@@ -37,7 +43,7 @@ void get_string(char* __s){
         /*** uuuuuugly ;/ ***/
         if(k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE &&
            pos.col != INPUT_STRING_MAX_LENGTH &&
-		   (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE){
+           (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE){
             entry = vga_entry( k.byte.ascii, color_entry(COLOR_WHITE, COLOR_BLACK) );
             put_video_memory(pos.col, pos.row, entry);
             pos.col += 1;
@@ -62,67 +68,113 @@ void get_string(char* __s){
 }
 
 void write_string_at(const char *__s, short x, short y, char attribs){
-	while(*__s){
-		put_video_memory(x,y , vga_entry(*__s, attribs));
-		x++;
-		__s++;
-	}
+    while(*__s){
+        put_video_memory(x,y , vga_entry(*__s, attribs));
+        x++;
+        __s++;
+    }
 }
 
 void fatal_error_box(const char *__s){
-	cursor_pos_t scrsize = get_max_xy();
-	clrscr(' ', color_entry(COLOR_BLACK, COLOR_BLUE));
-	write_string_at(__s, (scrsize.col / 2) - strlen(__s) / 2, scrsize.row / 2, color_entry(COLOR_RED, COLOR_BLUE));
-	while(1);
+    cursor_pos_t scrsize = get_max_xy();
+    clrscr(' ', color_entry(COLOR_BLACK, COLOR_BLUE));
+    write_string_at(__s, (scrsize.col / 2) - strlen(__s) / 2, scrsize.row / 2, color_entry(COLOR_RED, COLOR_BLUE));
+    while(1);
 }
 
-chs_t lba_to_chs(short lba){
-    chs_t chs;
-    chs.s = ( lba % SECTORS_PER_TRACK ) + 1;
-    chs.h = ( lba / SECTORS_PER_TRACK ) % NUMBER_OF_HEADS;
-    chs.c =   lba / ( SECTORS_PER_TRACK * NUMBER_OF_HEADS ); 
-    return chs;
-}
 
-char read_sectors(short offset_, short lba, short count)
+char rw_sectors(short offset_, short lba, short count, char read)
 {
-	_asm
-	{
-		mov ax, RAM_SEGMENT
-		mov es, ax
-	}
-	
+    _asm
+    {
+        mov ax, RAM_SEGMENT
+        mov es, ax
+    }
     while(count--)
     {
-        char c,h,s;
+        char c,h,s, rcode;
         short flags_reg;
         c =       lba / ( SECTORS_PER_TRACK * NUMBER_OF_HEADS ); 
         h =     ( lba / SECTORS_PER_TRACK ) % NUMBER_OF_HEADS;
         s =     ( lba % SECTORS_PER_TRACK ) + 1;
-        _asm
+        
+        if(read)
         {
-            mov ah, 0x02		/** Przerwanie czytaj sektory BIOSa **/
-            mov al, 0x01		/** Czytaj jeden sektor **/
-            mov ch, c			/** Koordy na dyskietce (CHS) **/
-            mov dh, h
-            mov cl, s
-            mov dl, 0			/** Numer stacji dyskietek **/
-            mov bx, offset_  	/** Offset względem 0x07e0 **/
-            int 0x13 
-            pushf			
-            pop flags_reg;
-        }
-        if(CHECK_BIT(flags_reg, CARRY_FLAG) ){
-            fatal_error_box("[GANJA KERNEL] Disk Read Error...");
-			return 1;
-        }
-        else
-        {
-            offset_ += BYTES_PER_SECTOR;
-            lba++;
-        }
+			_asm
+			{
+				mov ah, 0x02        /** Przerwanie czytaj sektory BIOSa **/
+				mov al, 0x01        /** Czytaj jeden sektor **/
+				mov ch, c           /** Koordy na dyskietce (CHS) **/
+				mov dh, h
+				mov cl, s
+				mov dl, 0           /** Numer stacji dyskietek **/
+				mov bx, offset_     /** Offset względem 0x07e0 **/
+				int 0x13 
+				mov rcode, ah
+				pushf           
+				pop flags_reg;
+			}
+			if(CHECK_BIT(flags_reg, CARRY_FLAG) ){
+				memset(error_buffer, 0, 15);
+				strcat(error_buffer, "Disc R Err:");
+				itoa(rcode, code_buffer, 16);
+				strcat(error_buffer, code_buffer);
+				fatal_error_box(error_buffer);
+			}
+		}
+		
+		if(!read)
+		{
+			_asm
+			{
+				mov ah, 0x03        /** Przerwanie ppisz sektory BIOSa **/
+				mov al, 0x01        /** pisz jeden sektor **/
+				mov ch, c           /** Koordy na dyskietce (CHS) **/
+				mov dh, h
+				mov cl, s
+				mov dl, 0           /** Numer stacji dyskietek **/
+				mov bx, offset_     /** Offset względem 0x07e0 **/
+				int 0x13 
+				mov rcode, ah
+				pushf           
+				pop flags_reg;
+			}	
+			if(CHECK_BIT(flags_reg, CARRY_FLAG) ){
+				memset(error_buffer, 0, 15);
+				strcat(error_buffer, "Disc W Err:");
+				itoa(rcode, code_buffer, 16);
+				strcat(error_buffer, code_buffer);
+				fatal_error_box(error_buffer);
+			}
+		}
+		
+		offset_ += BYTES_PER_SECTOR;
+        lba++; 
     }
+    _asm
+    {
+		mov ax, cs
+		mov es, ax
+	}
     return 0;
+}
+
+
+
+char reset_drive(){
+	short flags_reg;
+	_asm
+	{
+		mov ah, 0x00
+		mov al, 0x00 /** Numer stacji dyskietek, zakladam 0 **/
+		int 0x13
+		pushf
+		pop flags_reg
+	}
+	if(CHECK_BIT(flags_reg, CARRY_FLAG)){
+		fatal_error_box("[GANJA KERNEL] Reset Drive error...");
+	}
+	else return 0;
 }
 
 key_t get_key(void){
