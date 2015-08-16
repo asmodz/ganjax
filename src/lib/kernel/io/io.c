@@ -26,10 +26,13 @@ void puts_attrib(const char *__s , short attrib){
     }
 }
 
-void print_int(int i , char base){
+void print_int(int i , char base, char attrib){
     static char buffer[10];
     itoa(i, buffer, base);
-    puts(buffer);
+    if(attrib != 0)
+		puts_attrib(buffer, attrib);
+	else
+		puts(buffer);
 }
 
 void get_string(char* __s){
@@ -74,6 +77,7 @@ void write_string_at(const char *__s, short x, short y, char attribs){
         __s++;
     }
 }
+
 
 void fatal_error_box(const char *__s){
     cursor_pos_t scrsize = get_max_xy();

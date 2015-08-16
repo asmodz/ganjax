@@ -1,10 +1,11 @@
 #ifndef GANJAX_FAT12_H
 #define GANJAX_FAT12_H
 #include <kernel/io/io.h>
+
 #define IO_READ  1
 #define IO_WRITE 0
 #define RAM_SEGMENT 0x07E0
-
+#define ENTRY_SIZE 32
 
 _Packed struct fat12_entry_t{
 	char filename[8];
@@ -49,15 +50,24 @@ typedef struct fat12_bpb_t   fat12_bpb_t;
 
 static struct fat12_bpb_t fat12_bpb;
 static char _ready = 0x00;
+static unsigned int  _fat_offset;
+static unsigned int  _ent_offset;
 
 char floppy_rw_sectors(short offset_, short lba, short count, char read);
 char floppy_reset_drive();
 
+void fat12_init_filesystem();
 void fat12_load_bpb();
 void fat12_load_fat();
 void fat12_load_files();
 
+void fat12_list_files();
 void fat12_load_files_table();
 void fat12_search_file(const char* _name);
 
+static int fat12_compute_fat_lba();
+static int fat12_compute_fat_size();
+
+static int fat12_compute_ent_lba();
+static int fat12_compute_ent_size();
 #endif

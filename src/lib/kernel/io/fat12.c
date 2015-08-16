@@ -3,7 +3,6 @@ char floppy_rw_sectors(short offset_, short lba, short count, char read)
 {
 	if(_ready == 0)
 		fatal_error_box(errmesg("I/O Not ready = ", 0));
-	
     _asm
     {
         mov ax, RAM_SEGMENT
@@ -12,6 +11,7 @@ char floppy_rw_sectors(short offset_, short lba, short count, char read)
     while(count--)
     {
         char c,h,s, rcode;
+        /** Przelicz LBA na CHS **/
         c =       lba / ( fat12_bpb.sectors_per_track * fat12_bpb.heads_per_cylinder ); 
         h =     ( lba / fat12_bpb.sectors_per_track ) % fat12_bpb.heads_per_cylinder;
         s =     ( lba % fat12_bpb.sectors_per_track ) + 1;
@@ -79,6 +79,23 @@ char floppy_reset_drive(){
     else return 0;
 }
 
+void fat12_list_files(){
+	__segment entseg = 0x07e0;
+	char __based(entseg) *entptr = _ent_offset;
+	int z = 0;
+	while(*entptr){
+		fat12_entry_t file;
+		for(z=0;z<ENTRY_SIZE;++z) ((char*)&file)[z] = entptr[z]; 
+		entptr += ENTRY_SIZE;
+		
+		puts_attrib("Nazwa:", color_entry(COLOR_GREEN, COLOR_BLACK));
+		puts_attrib(file.filename, color_entry(COLOR_CYAN, COLOR_BLACK));
+		puts_attrib("Rozmiar:", color_entry(COLOR_RED, COLOR_BLACK));
+		print_int(file.file_size, 10, color_entry( COLOR_LIGHT_RED, COLOR_BLACK));
+		if(*entptr != 0) puts("\r\n");
+	}
+}
+
 void fat12_load_bpb(){
 	short  c, h, s, i;
 	char err;
@@ -109,12 +126,40 @@ void fat12_load_bpb(){
 	}
 }
 
+void fat12_init_filesystem(){
+	fat12_load_bpb();
+	fat12_load_fat();
+	fat12_load_files();
+}
+
 void fat12_load_fat(){
-	
+	_fat_offset = 0;
+	floppy_rw_sectors(
+		_fat_offset,
+		fat12_compute_fat_lba(),		
+		fat12_bpb.sectors_per_fat,		
+		IO_READ
+	);
 }
 
 void fat12_load_files(){
-	
+	_ent_offset = fat12_bpb.sectors_per_fat * fat12_bpb.bytes_per_sector;
+	floppy_rw_sectors(
+	 _ent_offset,
+	 fat12_compute_ent_lba(),
+	 fat12_compute_ent_size(),
+	  IO_READ
+	);
 }
 
+static int fat12_compute_fat_lba(){
+	return ( fat12_bpb.reserved_sectors + fat12_bpb.sectors_per_fat );
+}
 
+static int fat12_compute_ent_lba(){
+	return ( fat12_bpb.number_of_fats * fat12_bpb.sectors_per_fat + fat12_bpb.reserved_sectors );
+}
+
+static int fat12_compute_ent_size(){
+	return ( fat12_bpb.max_files * ENTRY_SIZE ) / fat12_bpb.bytes_per_sector;
+}

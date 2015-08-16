@@ -9,7 +9,7 @@
 
 void putc(char);
 void puts(const char* __s);
-void print_int(int i, char base);
+void print_int(int i, char base, char attrib);
 void puts_attrib(const char *__s, short attrib);
 
 void write_string_at(const char *__s, short x, short y, char attribs);

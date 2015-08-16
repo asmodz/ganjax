@@ -19,7 +19,7 @@ bpb_total_sectors_big:   DD 0                   ; 0
 
 bs_drive_number:         DB 0                   ; Numer dysku tj. 0x00
 bs_unused:               DB 0                   ; Ilość nieużywanych
-bs_ext_boot_signature:   DB 0x29                ; Typ i wersja BPB 0x29/x28 tj MS/PC-DOS 4.0v
+bs_ext_boot_signature:   DB 0x00                ; Typ i wersja BPB 0x29/x28 tj MS/PC-DOS 4.0v
 bs_serial_number:        DD 0xB16B00B5          ; BigBoobs serial
 bs_volume_label:         DB "GANJAX DISK"       ; Musi mieć dokładnie 11 bajtów
 bs_file_system:          DB "FAT12   "          ; Musi mieć 8 dokładnie bajtów 
