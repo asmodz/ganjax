@@ -26,10 +26,10 @@ void puts_attrib(const char *__s , short attrib){
     }
 }
 
-void print_int(short i , char base){
-	static char buffer[10];
-	itoa(i, buffer, base);
-	puts(buffer);
+void print_int(int i , char base){
+    static char buffer[10];
+    itoa(i, buffer, base);
+    puts(buffer);
 }
 
 void get_string(char* __s){
@@ -80,101 +80,6 @@ void fatal_error_box(const char *__s){
     clrscr(' ', color_entry(COLOR_BLACK, COLOR_BLUE));
     write_string_at(__s, (scrsize.col / 2) - strlen(__s) / 2, scrsize.row / 2, color_entry(COLOR_RED, COLOR_BLUE));
     while(1);
-}
-
-
-char rw_sectors(short offset_, short lba, short count, char read)
-{
-    _asm
-    {
-        mov ax, RAM_SEGMENT
-        mov es, ax
-    }
-    while(count--)
-    {
-        char c,h,s, rcode;
-        short flags_reg;
-        c =       lba / ( SECTORS_PER_TRACK * NUMBER_OF_HEADS ); 
-        h =     ( lba / SECTORS_PER_TRACK ) % NUMBER_OF_HEADS;
-        s =     ( lba % SECTORS_PER_TRACK ) + 1;
-        
-        if(read)
-        {
-			_asm
-			{
-				mov ah, 0x02        /** Przerwanie czytaj sektory BIOSa **/
-				mov al, 0x01        /** Czytaj jeden sektor **/
-				mov ch, c           /** Koordy na dyskietce (CHS) **/
-				mov dh, h
-				mov cl, s
-				mov dl, 0           /** Numer stacji dyskietek **/
-				mov bx, offset_     /** Offset względem 0x07e0 **/
-				int 0x13 
-				mov rcode, ah
-				pushf           
-				pop flags_reg;
-			}
-			if(CHECK_BIT(flags_reg, CARRY_FLAG) ){
-				memset(error_buffer, 0, 15);
-				strcat(error_buffer, "Disc R Err:");
-				itoa(rcode, code_buffer, 16);
-				strcat(error_buffer, code_buffer);
-				fatal_error_box(error_buffer);
-			}
-		}
-		
-		if(!read)
-		{
-			_asm
-			{
-				mov ah, 0x03        /** Przerwanie ppisz sektory BIOSa **/
-				mov al, 0x01        /** pisz jeden sektor **/
-				mov ch, c           /** Koordy na dyskietce (CHS) **/
-				mov dh, h
-				mov cl, s
-				mov dl, 0           /** Numer stacji dyskietek **/
-				mov bx, offset_     /** Offset względem 0x07e0 **/
-				int 0x13 
-				mov rcode, ah
-				pushf           
-				pop flags_reg;
-			}	
-			if(CHECK_BIT(flags_reg, CARRY_FLAG) ){
-				memset(error_buffer, 0, 15);
-				strcat(error_buffer, "Disc W Err:");
-				itoa(rcode, code_buffer, 16);
-				strcat(error_buffer, code_buffer);
-				fatal_error_box(error_buffer);
-			}
-		}
-		
-		offset_ += BYTES_PER_SECTOR;
-        lba++; 
-    }
-    _asm
-    {
-		mov ax, cs
-		mov es, ax
-	}
-    return 0;
-}
-
-
-
-char reset_drive(){
-	short flags_reg;
-	_asm
-	{
-		mov ah, 0x00
-		mov al, 0x00 /** Numer stacji dyskietek, zakladam 0 **/
-		int 0x13
-		pushf
-		pop flags_reg
-	}
-	if(CHECK_BIT(flags_reg, CARRY_FLAG)){
-		fatal_error_box("[GANJA KERNEL] Reset Drive error...");
-	}
-	else return 0;
 }
 
 key_t get_key(void){

@@ -77,18 +77,9 @@ cursor_pos_t get_cursor_position(){
 
 void put_video_memory(char x, char y, short byte){
     short index = y * VGA_WIDTH + x;
-    /** Adres tak naprawde to 0xb8000 **/
-    /** Kompilator adresuje ds:[video_memory] **/
-    short* video_memory = 0x0000;
-    _asm{
-        mov ax, 0xb800;
-        mov ds, ax
-    }
+    __segment video_segment = 0xb800;
+    short __based(video_segment) *video_memory = 0x0000;
     video_memory[index] = byte;
-    _asm{
-        mov ax, cs
-        mov ds, ax
-    }
 }
 
 cursor_pos_t get_max_xy(){

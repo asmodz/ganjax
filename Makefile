@@ -45,7 +45,7 @@ kernel_binary: kernel
 	$(WATCOM_LINK) @$(WATCOM_LINK_SCRIPT)
 	@echo "=========================================================="
 	
-internals:	_kernel_internal_io _kernel_internal_termio 
+internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_fat12
 usermode: _user_stringlib
 
 #============================================
@@ -56,6 +56,10 @@ _kernel_internal_io:
 _kernel_internal_termio:
 	@echo "=========================TERM==============================="
 	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/termio.errorz $(WOUT)/termio.o $(LIB_PATH)/kernel/io/terminal.c
+	@echo "=========================================================="
+_kernel_internal_fat12:
+	@echo "=========================FAT12==============================="
+	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/fat12.errorz $(WOUT)/fat12.o $(LIB_PATH)/kernel/io/fat12.c
 	@echo "=========================================================="
 
 #============================================
@@ -70,6 +74,7 @@ image:
 	dd if=/dev/zero of=$(BIN_PATH)/temp_img count=2879 bs=512
 	cat $(BIN_PATH)/$(BOOTLOADER_NAME) | cat - $(BIN_PATH)/temp_img > temp && mv temp $(BIN_PATH)/temp_img
 	mcopy -i $(BIN_PATH)/temp_img $(BIN_PATH)/$(KERNEL_BIN) ::/
+	mcopy -i $(BIN_PATH)/temp_img $(BIN_PATH)/TEST.TXT ::/
 	mdir  -i $(BIN_PATH)/temp_img
 	cat $(BIN_PATH)/temp_img > $(BIN_PATH)/$(IMAGE_NAME)
 	rm $(BIN_PATH)/temp_img

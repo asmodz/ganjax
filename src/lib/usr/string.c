@@ -109,3 +109,22 @@ char* memset(char *__s, short __c, short __n){
 	}
 	return ret;
 }
+
+char* memcpy(char* __s, const char *__src, short __n){
+	while(__n){
+		*__s = *__src;
+		__s++;
+		__src++;
+		__n--;
+	}
+}
+
+char* errmesg(char* __errmesg, char errcode){
+	static char int_buff[10];
+	memset(int_buff, 0, 10);
+	memset(errbuff, 0, 30);
+	strcat(errbuff, __errmesg);
+	itoa(errcode, int_buff, 16);
+	strcat(errbuff, int_buff);
+	return errbuff;
+}
