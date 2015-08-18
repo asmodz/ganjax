@@ -1,5 +1,7 @@
 #ifndef GANJAX_TERMINAL_H
 #define GANJAX_TERMINAL_H
+#pragma off(unreferenced)
+#include <stdint.h>
 
 enum VIDEO_MODE{ 
     TEXT_40x25_16_8 = 0x00,     /** 40x25   16 Colors 8 Pages **/
@@ -27,20 +29,19 @@ enum VGA_COLOR {
 };
 
 struct cursor_pos_t{
-    char row;
-    char col;
+    uint8_t row;
+    uint8_t col;
 };
 
 
 typedef struct cursor_pos_t cursor_pos_t;
 typedef enum VGA_COLOR  VGA_COLOR;
 typedef enum VIDEO_MODE VIDEO_MODE;
+/** ================================================= **/
 
 /** Domyślna wielkość okna terminala **/
-static short VGA_WIDTH  = 80;
-static short VGA_HEIGHT = 25;
-/** Pozycja kursora **/
-static cursor_pos_t cursor_position;
+static uint16_t VGA_WIDTH  = 80;
+static uint16_t VGA_HEIGHT = 25;
 /** Tryb video **/
 static VIDEO_MODE video_mode;
 
@@ -49,17 +50,14 @@ cursor_pos_t get_cursor_position();
 cursor_pos_t get_max_xy();
 void set_cursor_position(cursor_pos_t pos);
 
-void set_video_mode(VIDEO_MODE mode);
 VIDEO_MODE get_video_mode();
+void set_video_mode(VIDEO_MODE mode);
 
-void set_cursor_shape(char start_row, char end_row);
-
-void put_video_memory(char x, char y, short byte);
-
-void clrscr(char chr, char color);
-
+void set_cursor_shape(uint8_t start_row, uint8_t end_row);
+void put_video_memory(uint8_t x, uint8_t y, uint16_t byte);
+void clrscr(uint8_t chr, uint8_t color);
 void init_terminal();
 
-char color_entry(enum VGA_COLOR fg, enum VGA_COLOR bg);
-short vga_entry(char c, char color);
+uint8_t color_entry(enum VGA_COLOR fg, enum VGA_COLOR bg);
+uint16_t vga_entry(uint8_t c, uint8_t color);
 #endif

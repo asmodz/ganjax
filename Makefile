@@ -16,7 +16,7 @@ KERNEL_NAME=kernel.c
 KERNEL_FILE=kernel.o
 KERNEL_BIN=KERNEL.SYS
 #============================================
-WATCOM_CFLAGS=-0 -d0 -ms -s -wx -zl
+WATCOM_CFLAGS=-0 -d0 -ms -s -wx -zl 
 WATCOM_BIN=$(WATCOM)/binl
 WATCOM_CC=$(WATCOM_BIN)/./wcc
 WATCOM_LINK=$(WATCOM_BIN)/./wlink
@@ -26,8 +26,8 @@ WLOG=-fr=watcom_logs
 WOUT=-fo=bin
 #============================================
 
-all: bootloader startup internals usermode kernel_binary image
-
+all: startup internals utils kernel_binary image
+#startup internals usermode
 bootloader: 
 	@echo "======================BOOT================================"
 	$(ASM) $(ASM_FLAGS) $(BOOT_PATH)/$(BOOTLOADER_FILE) -o $(BIN_PATH)/$(BOOTLOADER_NAME)
@@ -46,7 +46,7 @@ kernel_binary: kernel
 	@echo "=========================================================="
 	
 internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_fat12
-usermode: _user_stringlib
+utils: _utils_stringlib
 
 #============================================
 _kernel_internal_io: 
@@ -63,9 +63,9 @@ _kernel_internal_fat12:
 	@echo "=========================================================="
 
 #============================================
-_user_stringlib:
+_utils_stringlib:
 	@echo "=========================STRING============================"
-	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/string.errorz $(WOUT)/string.o $(LIB_PATH)/usr/string.c
+	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/string.errorz $(WOUT)/string.o $(LIB_PATH)/string.c
 	@echo "=========================================================="
 
 #============================================
@@ -77,7 +77,8 @@ image:
 	mcopy -i $(BIN_PATH)/temp_img $(BIN_PATH)/TEST.TXT ::/
 	mdir  -i $(BIN_PATH)/temp_img
 	cat $(BIN_PATH)/temp_img > $(BIN_PATH)/$(IMAGE_NAME)
-	rm $(BIN_PATH)/temp_img
+	#mv $(BIN_PATH)/temp_img /home/zb1ggy/Pulpit/polygon/training/c++
+	#rm $(BIN_PATH)/temp_img
 	@echo "============================================================"
 #============================================
 clean:

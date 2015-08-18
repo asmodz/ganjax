@@ -1,7 +1,6 @@
 #include <kernel/io/io.h>
 
-
-void putc(char c){
+void putc(uint8_t c){
     _asm{
         mov ah, 0x0e
         mov al, c
@@ -16,7 +15,7 @@ void puts(const char* __s){
     }
 }
 
-void puts_attrib(const char *__s , short attrib){
+void puts_attrib(const char *__s , int16_t attrib){
     cursor_pos_t pos = get_cursor_position();
     while(*__s){
         put_video_memory(pos.col, pos.row, vga_entry(*__s, attrib));
@@ -26,8 +25,8 @@ void puts_attrib(const char *__s , short attrib){
     }
 }
 
-void print_int(int i , char base, char attrib){
-    static char buffer[10];
+void print_int(int16_t i , uint8_t base, int8_t attrib){
+    static char buffer[32];
     itoa(i, buffer, base);
     if(attrib != 0)
 		puts_attrib(buffer, attrib);
@@ -35,18 +34,22 @@ void print_int(int i , char base, char attrib){
 		puts(buffer);
 }
 
+void eol(){
+	puts("\r\n");
+}
+
 void get_string(char* __s){
     key_t k;
-    short entry;
+    int16_t entry;
     cursor_pos_t pos;
     while(1){
         k = get_key();
         pos = get_cursor_position();
-        
-        /*** uuuuuugly ;/ ***/
-        if(k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE &&
-           pos.col != INPUT_STRING_MAX_LENGTH &&
-           (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE){
+		/** UGLY **/
+        if(
+            k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE && pos.col != INPUT_STRING_MAX_LENGTH &&
+           (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE
+          ){
             entry = vga_entry( k.byte.ascii, color_entry(COLOR_WHITE, COLOR_BLACK) );
             put_video_memory(pos.col, pos.row, entry);
             pos.col += 1;
@@ -70,7 +73,7 @@ void get_string(char* __s){
     }
 }
 
-void write_string_at(const char *__s, short x, short y, char attribs){
+void write_string_at(const char *__s, uint16_t x, uint16_t y, int8_t attribs){
     while(*__s){
         put_video_memory(x,y , vga_entry(*__s, attribs));
         x++;

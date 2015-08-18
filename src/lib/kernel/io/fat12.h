@@ -1,73 +1,130 @@
 #ifndef GANJAX_FAT12_H
 #define GANJAX_FAT12_H
+
+#pragma off(unreferenced)
+
+#include <stdint.h>
 #include <kernel/io/io.h>
 
-#define IO_READ  1
-#define IO_WRITE 0
-#define RAM_SEGMENT 0x07E0
-#define ENTRY_SIZE 32
+#define FAT12_ENTRY_FREE      0xE5
+#define FAT12_ENTRY_LAST      0x00
+#define FAT12_CLUSTER_EMPTY   0x00
+#define FAT12_END_OF_CLUSTERS 0xFFF
+
+#define IO_READ               1
+#define IO_WRITE              0
+
+#define ENTRY_SIZE            32
+#define MAX_KERNEL_FILES      3
+
+#define DISK_OP_OK 			  0x0
+#define DISK_UNABLE_RESET     0x1
+#define DISK_ROOT_LOAD_FAIL   0x2
+#define DISK_FAT_LOAD_FAIL    0x3
+#define DISK_ROOT_SAVE_FAIL   0x4
+#define DISK_FAT_SAVE_FAIL    0x5
+#define DISK_ENTRY_OVERWRITE  0x6
+#define DISK_NO_SPC_FOR_ENT   0x7
+#define DISK_FILE_NOEXIST     0x8
+#define DISK_FSLOT_NON_EMPTY  0x9
 
 _Packed struct fat12_entry_t{
-	char filename[8];
-	char extension[3];
-	char attributes;
-	short reserved;
-	short create_time;
-	short create_date;
-	short last_access_date;
-	short ignore_in_fat12;
-	short last_write_time;
-	short last_write_date;
-	short first_cluster;
-	long int   file_size;
+	int8_t filename[8];
+	int8_t extension[3];
+	int8_t attributes;
+	int16_t reserved;
+	int16_t create_time;
+	int16_t create_date;
+	int16_t last_access_date;
+	int16_t ignore_in_fat12;
+	int16_t last_write_time;
+	int16_t last_write_date;
+	int16_t first_cluster;
+	int32_t file_size;
 };
 
 _Packed struct fat12_bpb_t{
-	char oem_name[8];
-	int bytes_per_sector;
-	char sectors_per_cluster;
-	int reserved_sectors;
-	char number_of_fats;
-	int max_files;
-	int total_sectors;
-	char media_sign;
-	int sectors_per_fat;
-	int sectors_per_track;
-	int heads_per_cylinder;
-	long int hidden_sectors;
-	long int total_sectors_big;
-	char drive_number;
-	char unused;
-	char ext_boot_signature;
-	long int serial_number;
-	char volume_label[11];
-	char file_system[8];
+	int8_t oem_name[8];
+	int16_t bytes_per_sector;
+	int8_t sectors_per_cluster;
+	int16_t reserved_sectors;
+	int8_t number_of_fats;
+	int16_t max_files;
+	int16_t total_sectors;
+	int8_t media_sign;
+	int16_t sectors_per_fat;
+	int16_t sectors_per_track;
+	int16_t heads_per_cylinder;
+	int32_t hidden_sectors;
+	int32_t total_sectors_big;
+	int8_t drive_number;
+	int8_t unused;
+	int8_t ext_boot_signature;
+	int32_t serial_number;
+	int8_t volume_label[11];
+	int8_t file_system[8];
 };
 
+_Packed struct file_t{
+	struct fat12_entry_t entry;
+	char __based(ram_area) *data;
+};
 
 typedef struct fat12_entry_t fat12_entry_t;
 typedef struct fat12_bpb_t   fat12_bpb_t;
+typedef struct file_t        file_t;
+/** ==================================================== **/
 
-static struct fat12_bpb_t fat12_bpb;
-static char _ready = 0x00;
-static unsigned int  _fat_offset;
-static unsigned int  _ent_offset;
+static __segment RAMSEG     = 0x07e0;
+static uint16_t FAT_OFFSET  = 0x0000;
+static uint16_t ROOT_OFFSET = 0x0000;
+static uint16_t DATA_OFFSET = 0x0000;
 
-char floppy_rw_sectors(short offset_, short lba, short count, char read);
-char floppy_reset_drive();
 
-void fat12_init_filesystem();
-void fat12_load_bpb();
-void fat12_load_fat();
-void fat12_load_files();
+static fat12_bpb_t _bpb;
+static char __based(RAMSEG) *fat;
+static fat12_entry_t __based(RAMSEG) *entries;
+static file_t  *_file_handle = 0;
 
-void fat12_list_files();
-void fat12_load_files_table();
-void fat12_search_file(const char* _name);
+/** ======================API=========================== **/
 
-static int fat12_compute_fat_lba();
-static int fat12_compute_fat_size();
+int8_t init_fs();
+int8_t load_file(const char *__s, file_t *_fhandle);
+int8_t get_entry_by_name(const char* __s, fat12_entry_t *__e);
 
-static int fat12_compute_ent_lba();
-static int fat12_compute_ent_size();
+void   print_bpb();
+void   print_lba();
+void   print_offsets();
+void   print_files();
+void   print_entry(fat12_entry_t *__e);
+void   free_file();
+
+
+/** ==================================================== **/
+
+static int8_t floppy_rw_sectors(uint16_t offset_, int16_t lba, uint16_t count, uint8_t read);
+static int8_t floppy_reset_drive();
+
+static uint16_t fat_lba();
+static uint16_t root_lba();
+static uint16_t data_lba();
+
+static uint16_t fat_size();
+static uint16_t root_size();
+static uint16_t data_size();
+static uint16_t cluster_to_lba(uint16_t clusternum);
+static uint16_t fat12_get_fat_entry(uint16_t clusternum);
+ 
+
+static void  fat12_load_bpb();
+static void  fat12_set_fat_entry(uint16_t clusternum, uint16_t value);
+
+static int8_t fat12_save_root();
+static int8_t fat12_save_fat();
+static int8_t fat12_load_root();
+static int8_t fat12_load_fat();
+int8_t fat12_load_file_mem(const char *__n, uint16_t offset);
+static int8_t fat12_add_new_entry(fat12_entry_t *__e);
+
+/** ==================================================== **/
 #endif
