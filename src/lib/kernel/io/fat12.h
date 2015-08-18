@@ -6,27 +6,30 @@
 #include <stdint.h>
 #include <kernel/io/io.h>
 
-#define FAT12_ENTRY_FREE      0xE5
-#define FAT12_ENTRY_LAST      0x00
-#define FAT12_CLUSTER_EMPTY   0x00
-#define FAT12_END_OF_CLUSTERS 0xFFF
+#define FAT12_ENTRY_FREE       0xE5
+#define FAT12_ENTRY_LAST       0x00
+#define FAT12_CLUSTER_EMPTY    0x00
+#define FAT12_END_OF_CLUSTERS  0xFFF
+#define FAT12_FREE_CLUSTER     0x00
 
-#define IO_READ               1
-#define IO_WRITE              0
+#define IO_READ                1
+#define IO_WRITE               0
 
-#define ENTRY_SIZE            32
-#define MAX_KERNEL_FILES      3
+#define ENTRY_SIZE             32
+#define MAX_KERNEL_FILES       3
 
-#define DISK_OP_OK 			  0x0
-#define DISK_UNABLE_RESET     0x1
-#define DISK_ROOT_LOAD_FAIL   0x2
-#define DISK_FAT_LOAD_FAIL    0x3
-#define DISK_ROOT_SAVE_FAIL   0x4
-#define DISK_FAT_SAVE_FAIL    0x5
-#define DISK_ENTRY_OVERWRITE  0x6
-#define DISK_NO_SPC_FOR_ENT   0x7
-#define DISK_FILE_NOEXIST     0x8
-#define DISK_FSLOT_NON_EMPTY  0x9
+#define DISK_OP_OK 			   0x0
+#define DISK_UNABLE_RESET      0x1
+#define DISK_ROOT_LOAD_FAIL    0x2
+#define DISK_FAT_LOAD_FAIL     0x3
+#define DISK_ROOT_SAVE_FAIL    0x4
+#define DISK_FAT_SAVE_FAIL     0x5
+#define DISK_ENTRY_OVERWRITE   0x6
+#define DISK_NO_SPC_FOR_ENT    0x7
+#define DISK_FILE_NOEXIST      0x8
+#define DISK_FSLOT_NON_EMPTY   0x9
+#define DISK_NO_ENOUGH_SPACE   0xA
+#define DISK_FILE_SIZE_IS_ZERO 0xB
 
 _Packed struct fat12_entry_t{
 	int8_t filename[8];
@@ -97,6 +100,7 @@ void   print_lba();
 void   print_offsets();
 void   print_files();
 void   print_entry(fat12_entry_t *__e);
+void   print_cluster_list(uint16_t clusternum);
 void   free_file();
 
 
@@ -123,8 +127,9 @@ static int8_t fat12_save_root();
 static int8_t fat12_save_fat();
 static int8_t fat12_load_root();
 static int8_t fat12_load_fat();
-int8_t fat12_load_file_mem(const char *__n, uint16_t offset);
+static int8_t fat12_load_file_mem(const char *__n, uint16_t offset);
 static int8_t fat12_add_new_entry(fat12_entry_t *__e);
-
+int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e);
+static int8_t fat12_search_free_clusters(uint16_t *_fcl, uint8_t needed);
 /** ==================================================== **/
 #endif

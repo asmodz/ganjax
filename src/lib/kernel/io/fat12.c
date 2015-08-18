@@ -135,6 +135,14 @@ void print_files(){
     eol();
 }
 
+void print_cluster_list(uint16_t clusternum){
+	while(clusternum != FAT12_END_OF_CLUSTERS){
+		print_int(clusternum, 10, 0); putc(' ');
+		clusternum = fat12_get_fat_entry(clusternum);
+	}
+	eol();
+}
+
 void print_entry(fat12_entry_t *__e){
     puts_attrib("N:", color_entry(COLOR_RED, COLOR_BLACK));
     puts_attrib(__e->filename, color_entry(COLOR_MAGENTA, COLOR_BLACK));
@@ -356,7 +364,7 @@ static int8_t fat12_load_fat(){
     return DISK_OP_OK;
 }
 
-int8_t fat12_load_file_mem(const char *__n, uint16_t offset){
+static int8_t fat12_load_file_mem(const char *__n, uint16_t offset){
     fat12_entry_t ent;
 	if(get_entry_by_name(__n, &ent)){
 		uint16_t cluster_index = ent.first_cluster;
@@ -387,3 +395,70 @@ static int8_t fat12_add_new_entry(fat12_entry_t *__e){
     return DISK_NO_SPC_FOR_ENT;
 }
 
+#define TINYDEBUG
+int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e){
+	int8_t rcode, i, list_cnt = 0;
+	static uint16_t free_list[32]; // 16kb
+	uint16_t clusters_needed;
+	
+	/** If file size is zero then not **/
+	if( (__e->file_size == 0) )
+		return DISK_FILE_SIZE_IS_ZERO;
+		
+	/** Clear clusterz **/
+	for(;i<32;++i) free_list[i] = 0x00;
+	
+	/** Calculate needed clusters for allocation **/
+	clusters_needed = (uint16_t) __e->file_size / _bpb.bytes_per_sector;
+	if( (int) __e->file_size % _bpb.bytes_per_sector > 0 )
+		clusters_needed++;
+	
+	puts("Need:"); print_int(clusters_needed, 10, 0);eol();
+	/** Search clusters in FAT **/
+	list_cnt = fat12_search_free_clusters(free_list, clusters_needed);
+	if(list_cnt != clusters_needed)
+		return DISK_NO_ENOUGH_SPACE;
+		
+	/** Set last cluster in table to EOC Mark **/
+	free_list[list_cnt] = FAT12_END_OF_CLUSTERS;
+	
+	/** Ok, we have enough clusters to save file **/
+	__e->first_cluster = free_list[0];
+	if( (rcode = fat12_add_new_entry(__e)) > 0)
+		return rcode;
+	
+	i=0;
+	for(;i<clusters_needed + 1;++i){
+		if(free_list[i] == FAT12_END_OF_CLUSTERS) break;
+		#ifdef TINYDEBUG
+			puts("Dla "); print_int(free_list[i], 10, 0);
+			puts(" Ustaw "); print_int(free_list[i+1], 10, 0);
+			eol();
+		#endif
+		fat12_set_fat_entry(free_list[i], free_list[i+1]);
+		if( (rcode = floppy_rw_sectors(DATA_OFFSET + offset, cluster_to_lba(free_list[i]), 1, IO_WRITE)) > 0){
+			/** If error, clear fucked clusters **/
+			for(;i<clusters_needed + 1;++i){
+				if(free_list[i] == FAT12_END_OF_CLUSTERS) break;
+				fat12_set_fat_entry(free_list[i], FAT12_FREE_CLUSTER);
+			}
+			/** Und exit with BIOS errcode **/
+			return rcode;
+		}
+		offset += _bpb.bytes_per_sector;
+	}
+	fat12_save_fat();
+	fat12_save_root();
+	return DISK_OP_OK;
+}
+
+static int8_t fat12_search_free_clusters(uint16_t *_fcl, uint8_t needed){
+	uint16_t i=2;
+	int8_t free=0;
+	for(;i< fat_size() * _bpb.bytes_per_sector;++i){
+		if(free == needed) return free;
+		if(fat12_get_fat_entry(i) == FAT12_FREE_CLUSTER)
+			_fcl[free++] = i;
+	}
+	return free;
+}
