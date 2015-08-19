@@ -29,13 +29,13 @@ void print_int(int16_t i , uint8_t base, int8_t attrib){
     static char buffer[32];
     itoa(i, buffer, base);
     if(attrib != 0)
-		puts_attrib(buffer, attrib);
-	else
-		puts(buffer);
+        puts_attrib(buffer, attrib);
+    else
+        puts(buffer);
 }
 
 void eol(){
-	puts("\r\n");
+    puts("\r\n");
 }
 
 uint16_t get_string(char* __s, uint16_t len, uint8_t withprompt){
@@ -46,7 +46,7 @@ uint16_t get_string(char* __s, uint16_t len, uint8_t withprompt){
     while(1){
         k = get_key();
         pos = get_cursor_position();
-		/** UGLY **/
+        /** UGLY **/
         if(
             k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE && pos.col != len &&
            (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE

@@ -20,7 +20,7 @@
 #define ENTRY_SIZE             32
 #define MAX_KERNEL_FILES       3
 
-#define DISK_OP_OK 			   0x0
+#define DISK_OP_OK             0x0
 #define DISK_UNABLE_RESET      0x1
 #define DISK_ROOT_LOAD_FAIL    0x2
 #define DISK_FAT_LOAD_FAIL     0x3
@@ -42,45 +42,45 @@
 #define DISK_EXT_NOT_THREE     0x14
 
 _Packed struct fat12_entry_t{
-	int8_t filename[8];
-	int8_t extension[3];
-	int8_t attributes;
-	int16_t reserved;
-	int16_t create_time;
-	int16_t create_date;
-	int16_t last_access_date;
-	int16_t ignore_in_fat12;
-	int16_t last_write_time;
-	int16_t last_write_date;
-	int16_t first_cluster;
-	int32_t file_size;
+    int8_t filename[8];
+    int8_t extension[3];
+    int8_t attributes;
+    int16_t reserved;
+    int16_t create_time;
+    int16_t create_date;
+    int16_t last_access_date;
+    int16_t ignore_in_fat12;
+    int16_t last_write_time;
+    int16_t last_write_date;
+    int16_t first_cluster;
+    int32_t file_size;
 };
 
 _Packed struct fat12_bpb_t{
-	int8_t oem_name[8];
-	int16_t bytes_per_sector;
-	int8_t sectors_per_cluster;
-	int16_t reserved_sectors;
-	int8_t number_of_fats;
-	int16_t max_files;
-	int16_t total_sectors;
-	int8_t media_sign;
-	int16_t sectors_per_fat;
-	int16_t sectors_per_track;
-	int16_t heads_per_cylinder;
-	int32_t hidden_sectors;
-	int32_t total_sectors_big;
-	int8_t drive_number;
-	int8_t unused;
-	int8_t ext_boot_signature;
-	int32_t serial_number;
-	int8_t volume_label[11];
-	int8_t file_system[8];
+    int8_t oem_name[8];
+    int16_t bytes_per_sector;
+    int8_t sectors_per_cluster;
+    int16_t reserved_sectors;
+    int8_t number_of_fats;
+    int16_t max_files;
+    int16_t total_sectors;
+    int8_t media_sign;
+    int16_t sectors_per_fat;
+    int16_t sectors_per_track;
+    int16_t heads_per_cylinder;
+    int32_t hidden_sectors;
+    int32_t total_sectors_big;
+    int8_t drive_number;
+    int8_t unused;
+    int8_t ext_boot_signature;
+    int32_t serial_number;
+    int8_t volume_label[11];
+    int8_t file_system[8];
 };
 
 _Packed struct file_t{
-	struct fat12_entry_t entry;
-	char __based(ram_area) *data;
+    struct fat12_entry_t entry;
+    char __based(ram_area) *data;
 };
 
 typedef struct fat12_entry_t fat12_entry_t;

@@ -82,14 +82,14 @@ void put_video_memory(uint8_t x, uint8_t y, uint16_t byte){
 }
 
 cursor_pos_t get_max_xy(){
-	cursor_pos_t screen_size;
-	screen_size.row = VGA_HEIGHT;
-	screen_size.col = VGA_WIDTH;
-	return screen_size;
+    cursor_pos_t screen_size;
+    screen_size.row = VGA_HEIGHT;
+    screen_size.col = VGA_WIDTH;
+    return screen_size;
 }
 
 void init_terminal(){
-	cursor_pos_t initial_position;
+    cursor_pos_t initial_position;
     set_video_mode(TEXT_80x25_16_8);
     set_cursor_shape(0xf | (1 << 5) , 0); /** Jeśli 5 bit ustawiony, kursor niewidoczny  **/
     initial_position.row = initial_position.col = 0;

@@ -35,38 +35,38 @@ int8_t load_file(const char *__s, file_t *_fhandle){
 }
 
 int8_t create_file(const char *__s, uint16_t offset, uint16_t size){
-	fat12_entry_t _ent;
-	int8_t rc;
-	char name[11]; 
-	
-	if(size == 0)
-		return DISK_FILE_SIZE_IS_ZERO;
-	
-	if( (rc = normal_to_fat12(__s, name)) > 0)
-		return rc;
-	
-	if(get_entry_by_name(name, &_ent))
-		return DISK_ENTRY_OVERWRITE;
-	
-	memcpy( (char*)&_ent, name, 11);
-	_ent.file_size = size;
-	
-	if(( rc = fat12_create_new_file(offset, &_ent, false)) > 0)
-		return rc;
-	
-	return DISK_OP_OK;
+    fat12_entry_t _ent;
+    int8_t rc;
+    char name[11]; 
+    
+    if(size == 0)
+        return DISK_FILE_SIZE_IS_ZERO;
+    
+    if( (rc = normal_to_fat12(__s, name)) > 0)
+        return rc;
+    
+    if(get_entry_by_name(name, &_ent))
+        return DISK_ENTRY_OVERWRITE;
+    
+    memcpy( (char*)&_ent, name, 11);
+    _ent.file_size = size;
+    
+    if(( rc = fat12_create_new_file(offset, &_ent, false)) > 0)
+        return rc;
+    
+    return DISK_OP_OK;
 }
 
 int8_t delete_file(const char *__s){
-	int8_t rc;
-	char name[11];
-	
-	if( (rc = normal_to_fat12(__s, name)) > 0)
-		return rc;
-	if( (rc = fat12_delete_file(name)) > 0)
-		return rc;
-	
-	return DISK_OP_OK;
+    int8_t rc;
+    char name[11];
+    
+    if( (rc = normal_to_fat12(__s, name)) > 0)
+        return rc;
+    if( (rc = fat12_delete_file(name)) > 0)
+        return rc;
+    
+    return DISK_OP_OK;
 }
 
 int8_t get_entry_by_name(const char* __s, fat12_entry_t *__e){
@@ -82,37 +82,37 @@ int8_t get_entry_by_name(const char* __s, fat12_entry_t *__e){
 }
 
 int8_t normal_to_fat12(const char* _n, char* _b){
-	static char bn[8];
-	static char be[3];
-	int16_t posdot, cntdot, i, i2;
-	memset(bn, 0, 8); memset(be, 0, 8); memset(_b, ' ', 11);
-	posdot = strpos(_n, '.');
-	cntdot = strcnt(_n, '.');
-	if(cntdot != 1)
-		return DISK_MORE_DOTS;
-	if(posdot == -1)
-		return DISK_NOT_DOT;
-	if(posdot == 0)
-		return DISK_DOT_FIRST;
-	if(posdot > 7)
-		return DISK_DOT_PLUS_EIGHT;
-	
-	memcpy( bn, _n, posdot);
-	memcpy( be, _n + posdot +1, 3);
-	
-	if(strcnt(bn, ' '))
-		return DISK_SPACE_IN_FILENAME;
-	if(strcnt(be, ' '))
-		return DISK_SPACE_IN_EXT;
-	if(strlen(be) != 3)
-		return DISK_EXT_NOT_THREE;
-		
-	i2 = 0;
-	for(i=0;i<8;++i) _b[i] = bn[i];
-	for(i=0;i<8;++i) if(_b[i] == 0) _b[i] = ' ';
-	for(i=8;i<11;++i)_b[i] = be[i2++];
-	_b[11] = 0;
-	return DISK_OP_OK;
+    static char bn[8];
+    static char be[3];
+    int16_t posdot, cntdot, i, i2;
+    memset(bn, 0, 8); memset(be, 0, 8); memset(_b, ' ', 11);
+    posdot = strpos(_n, '.');
+    cntdot = strcnt(_n, '.');
+    if(cntdot != 1)
+        return DISK_MORE_DOTS;
+    if(posdot == -1)
+        return DISK_NOT_DOT;
+    if(posdot == 0)
+        return DISK_DOT_FIRST;
+    if(posdot > 7)
+        return DISK_DOT_PLUS_EIGHT;
+    
+    memcpy( bn, _n, posdot);
+    memcpy( be, _n + posdot +1, 3);
+    
+    if(strcnt(bn, ' '))
+        return DISK_SPACE_IN_FILENAME;
+    if(strcnt(be, ' '))
+        return DISK_SPACE_IN_EXT;
+    if(strlen(be) != 3)
+        return DISK_EXT_NOT_THREE;
+        
+    i2 = 0;
+    for(i=0;i<8;++i) _b[i] = bn[i];
+    for(i=0;i<8;++i) if(_b[i] == 0) _b[i] = ' ';
+    for(i=8;i<11;++i)_b[i] = be[i2++];
+    _b[11] = 0;
+    return DISK_OP_OK;
 }
 
 void print_bpb(){
@@ -469,31 +469,31 @@ static int8_t fat12_add_new_entry(fat12_entry_t *__e){
 }
 
 static int8_t fat12_delete_file(const char *__n){
-	uint8_t j = 0, i = 0;
-	for(;i<_bpb.max_files;++i){
-		fat12_entry_t _tmp = entries[i];
-		/** Ok, file exists **/
-		if(strncmp(_tmp.filename, __n, 11) == NULL){
-			uint16_t f_c = _tmp.first_cluster;
-			uint16_t c_c = 0, c_i = 15, c_next;
-			/** Filename to 0xe5 **/
-			for(j=0;j<11;++j)
-				entries[i].filename[j] = FAT12_ENTRY_FREE;
-			while(f_c != FAT12_END_OF_CLUSTERS)
-			{
-				/** Delete clusters from FAT but not zero clusters **/
-				c_next = fat12_get_fat_entry(f_c);
-				#ifdef TINYDEBUG
-					puts("Dla "); print_int(f_c, 10, 0); 
-					puts(" Ustawiam 0"); eol();
-				#endif
-				fat12_set_fat_entry(f_c, FAT12_CLUSTER_EMPTY);
-				f_c = c_next; 
-			}
-			return DISK_OP_OK;
-		}
-	}
-	return DISK_FILE_NOEXIST;
+    uint8_t j = 0, i = 0;
+    for(;i<_bpb.max_files;++i){
+        fat12_entry_t _tmp = entries[i];
+        /** Ok, file exists **/
+        if(strncmp(_tmp.filename, __n, 11) == NULL){
+            uint16_t f_c = _tmp.first_cluster;
+            uint16_t c_c = 0, c_i = 15, c_next;
+            /** Filename to 0xe5 **/
+            for(j=0;j<11;++j)
+                entries[i].filename[j] = FAT12_ENTRY_FREE;
+            while(f_c != FAT12_END_OF_CLUSTERS)
+            {
+                /** Delete clusters from FAT but not zero clusters **/
+                c_next = fat12_get_fat_entry(f_c);
+                #ifdef TINYDEBUG
+                    puts("Dla "); print_int(f_c, 10, 0); 
+                    puts(" Ustawiam 0"); eol();
+                #endif
+                fat12_set_fat_entry(f_c, FAT12_CLUSTER_EMPTY);
+                f_c = c_next; 
+            }
+            return DISK_OP_OK;
+        }
+    }
+    return DISK_FILE_NOEXIST;
 }
 
 static int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e, uint8_t forcewrite){

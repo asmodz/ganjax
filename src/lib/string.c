@@ -101,60 +101,60 @@ char * itoa( int value, char * str, int base ){
 }
 
 char* memset(char *__s, short __c, short __n){
-	char* ret = __s;
-	while(__n){
-		*__s = __c;
-		__s++;
-		__n--;
-	}
-	return ret;
+    char* ret = __s;
+    while(__n){
+        *__s = __c;
+        __s++;
+        __n--;
+    }
+    return ret;
 }
 
 char* memcpy(char* __s, const char *__src, short __n){
-	while(__n){
-		*__s = *__src;
-		__s++;
-		__src++;
-		__n--;
-	}
-	return __s;
+    while(__n){
+        *__s = *__src;
+        __s++;
+        __src++;
+        __n--;
+    }
+    return __s;
 }
 
 char* errmesg(char* __errmesg, char errcode){
-	static char int_buff[10];
-	memset(int_buff, 0, 10);
-	memset(errbuff, 0, 30);
-	strcat(errbuff, __errmesg);
-	itoa(errcode, int_buff, 16);
-	strcat(errbuff, int_buff);
-	return errbuff;
+    static char int_buff[10];
+    memset(int_buff, 0, 10);
+    memset(errbuff, 0, 30);
+    strcat(errbuff, __errmesg);
+    itoa(errcode, int_buff, 16);
+    strcat(errbuff, int_buff);
+    return errbuff;
 }
 
 int strncmp(const char *s1, const char *s2, short n)
 {
     for ( ; n > 0; s1++, s2++, --n)
-	if (*s1 != *s2)
-	    return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
-	else if (*s1 == '\0')
-	    return 0;
+    if (*s1 != *s2)
+        return ((*(unsigned char *)s1 < *(unsigned char *)s2) ? -1 : +1);
+    else if (*s1 == '\0')
+        return 0;
     return 0;
 }
 
 int   strcnt(const char *__s, char c){
-	int cnt= 0;
-	while(*__s){
-		if(*__s == c) cnt++;
-		__s++;
-	}
-	return cnt;
+    int cnt= 0;
+    while(*__s){
+        if(*__s == c) cnt++;
+        __s++;
+    }
+    return cnt;
 }
 
 int  strpos(const char *__s, char c){
-	int pos = 0;
-	while(*__s){
-		if(*__s == c) return pos;
-		pos++;
-		__s++;
-	}
-	return -1;
+    int pos = 0;
+    while(*__s){
+        if(*__s == c) return pos;
+        pos++;
+        __s++;
+    }
+    return -1;
 }
