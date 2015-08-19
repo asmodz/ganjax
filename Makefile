@@ -45,7 +45,10 @@ kernel_binary: kernel
 	$(WATCOM_LINK) @$(WATCOM_LINK_SCRIPT)
 	@echo "=========================================================="
 	
-internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_fat12 _kernel_internal_memory
+internals:	_kernel_internal_io _kernel_internal_termio    \
+            _kernel_internal_fat12 _kernel_internal_memory \
+            _kernel_internal_executor
+			
 utils: _utils_stringlib
 
 #============================================
@@ -65,6 +68,10 @@ _kernel_internal_memory:
 	@echo "=========================MEMO==============================="
 	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/memory.o $(LIB_PATH)/kernel/asm/memory.c
 	@echo "=========================MEMO==============================="
+_kernel_internal_executor:
+	@echo "=========================MEMO==============================="
+	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/executor.o $(LIB_PATH)/kernel/asm/exec.c
+	@echo "=========================MEMO==============================="
 #============================================
 _utils_stringlib:
 	@echo "=========================STRING============================"
@@ -77,6 +84,7 @@ image:
 	dd if=/dev/zero of=$(BIN_PATH)/temp_img count=2879 bs=512
 	cat $(BIN_PATH)/$(BOOTLOADER_NAME) | cat - $(BIN_PATH)/temp_img > temp && mv temp $(BIN_PATH)/temp_img
 	mcopy -i $(BIN_PATH)/temp_img $(BIN_PATH)/$(KERNEL_BIN) ::/
+	mcopy -i $(BIN_PATH)/temp_img $(BIN_PATH)/RAW.BIN ::/
 	mcopy -i $(BIN_PATH)/temp_img $(BIN_PATH)/TEST.TXT ::/
 	mdir  -i $(BIN_PATH)/temp_img
 	cat $(BIN_PATH)/temp_img > $(BIN_PATH)/$(IMAGE_NAME)

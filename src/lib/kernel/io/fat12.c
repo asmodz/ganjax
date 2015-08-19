@@ -14,13 +14,23 @@ int8_t init_fs(){
 int8_t load_file(const char *__s, file_t *_fhandle){
     fat12_entry_t _ent;
     static file_t _fbuff_;
+    char name[11];
     int8_t return_code;
     int16_t offset = 0x0000;
+    
     if( _file_handle != NULL )
         return DISK_FSLOT_NON_EMPTY;
-    if(get_entry_by_name(__s, &_ent)){
+    
+    if((return_code = normal_to_fat12(__s, name)) > 0){
+        return return_code;
+    }
+
+    
+    if(get_entry_by_name(name, &_ent))
+    {
         if( (return_code = fat12_load_file_mem(_ent.filename, offset)) > 0)
             return return_code;
+        
         else
         {
             _fbuff_.entry = _ent;
@@ -29,9 +39,10 @@ int8_t load_file(const char *__s, file_t *_fhandle){
             (*_fhandle) = _fbuff_;
             return DISK_OP_OK;
         }
+    
     }   
     else
-        return false;
+        return DISK_FILE_NOEXIST;
 }
 
 int8_t create_file(const char *__s, uint16_t offset, uint16_t size){
@@ -476,8 +487,8 @@ static int8_t fat12_delete_file(const char *__n){
         if(strncmp(_tmp.filename, __n, 11) == NULL){
             uint16_t f_c = _tmp.first_cluster;
             uint16_t c_c = 0, c_i = 15, c_next;
-            /** Filename to 0xe5 **/
-            for(j=0;j<11;++j)
+            /** Filename to 0xE5 **/
+            for(j=0;j<32;++j)
                 entries[i].filename[j] = FAT12_ENTRY_FREE;
             while(f_c != FAT12_END_OF_CLUSTERS)
             {
@@ -490,6 +501,8 @@ static int8_t fat12_delete_file(const char *__n){
                 fat12_set_fat_entry(f_c, FAT12_CLUSTER_EMPTY);
                 f_c = c_next; 
             }
+            fat12_save_fat();
+            fat12_save_root();
             return DISK_OP_OK;
         }
     }
