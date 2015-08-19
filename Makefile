@@ -26,7 +26,7 @@ WLOG=-fr=watcom_logs
 WOUT=-fo=bin
 #============================================
 
-all: startup internals utils kernel_binary image
+all: bootloader startup internals utils kernel_binary image
 #startup internals usermode
 bootloader: 
 	@echo "======================BOOT================================"
@@ -45,7 +45,7 @@ kernel_binary: kernel
 	$(WATCOM_LINK) @$(WATCOM_LINK_SCRIPT)
 	@echo "=========================================================="
 	
-internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_fat12
+internals:	_kernel_internal_io _kernel_internal_termio _kernel_internal_fat12 _kernel_internal_memory
 utils: _utils_stringlib
 
 #============================================
@@ -61,7 +61,10 @@ _kernel_internal_fat12:
 	@echo "=========================FAT12==============================="
 	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/fat12.errorz $(WOUT)/fat12.o $(LIB_PATH)/kernel/io/fat12.c
 	@echo "=========================================================="
-
+_kernel_internal_memory:
+	@echo "=========================MEMO==============================="
+	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/memory.o $(LIB_PATH)/kernel/asm/memory.c
+	@echo "=========================MEMO==============================="
 #============================================
 _utils_stringlib:
 	@echo "=========================STRING============================"

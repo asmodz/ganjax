@@ -117,6 +117,7 @@ char* memcpy(char* __s, const char *__src, short __n){
 		__src++;
 		__n--;
 	}
+	return __s;
 }
 
 char* errmesg(char* __errmesg, char errcode){
@@ -137,4 +138,23 @@ int strncmp(const char *s1, const char *s2, short n)
 	else if (*s1 == '\0')
 	    return 0;
     return 0;
+}
+
+int   strcnt(const char *__s, char c){
+	int cnt= 0;
+	while(*__s){
+		if(*__s == c) cnt++;
+		__s++;
+	}
+	return cnt;
+}
+
+int  strpos(const char *__s, char c){
+	int pos = 0;
+	while(*__s){
+		if(*__s == c) return pos;
+		pos++;
+		__s++;
+	}
+	return -1;
 }

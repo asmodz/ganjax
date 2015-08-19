@@ -38,16 +38,17 @@ void eol(){
 	puts("\r\n");
 }
 
-void get_string(char* __s){
+uint16_t get_string(char* __s, uint16_t len, uint8_t withprompt){
     key_t k;
     int16_t entry;
+    uint16_t i = 0;
     cursor_pos_t pos;
     while(1){
         k = get_key();
         pos = get_cursor_position();
 		/** UGLY **/
         if(
-            k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE && pos.col != INPUT_STRING_MAX_LENGTH &&
+            k.byte.scan != KEY_ENTER && k.byte.scan != KEY_BACKSPACE && pos.col != len &&
            (k.byte.scan > KEY_ESC && k.byte.scan < KEY_RSHIFT) | k.byte.scan == KEY_SPACE
           ){
             entry = vga_entry( k.byte.ascii, color_entry(COLOR_WHITE, COLOR_BLACK) );
@@ -56,14 +57,16 @@ void get_string(char* __s){
             set_cursor_position(pos);
             *__s = k.byte.ascii;
             __s++;
+            i++;
         }
         else if(k.byte.scan == KEY_ENTER && pos.col > 1){
             *__s = '\0';
             puts("\r\n");
-            return;
+            return i;
         }
-        else if(k.byte.scan == KEY_BACKSPACE && pos.col != 1){
+        else if(k.byte.scan == KEY_BACKSPACE && pos.col != withprompt){
             __s--;
+            i--;
             *__s = '\0';
             entry = vga_entry( ' ', color_entry(COLOR_WHITE, COLOR_BLACK));
             pos.col -= 1;

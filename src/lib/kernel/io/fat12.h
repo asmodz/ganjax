@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <kernel/io/io.h>
 
+#define TINYDEBUG
+
 #define FAT12_ENTRY_FREE       0xE5
 #define FAT12_ENTRY_LAST       0x00
 #define FAT12_CLUSTER_EMPTY    0x00
@@ -30,6 +32,14 @@
 #define DISK_FSLOT_NON_EMPTY   0x9
 #define DISK_NO_ENOUGH_SPACE   0xA
 #define DISK_FILE_SIZE_IS_ZERO 0xB
+#define DISK_FILENAME_TOO_LONG 0xC
+#define DISK_NOT_DOT           0xD
+#define DISK_DOT_FIRST         0xE
+#define DISK_MORE_DOTS         0xF
+#define DISK_DOT_PLUS_EIGHT    0x11
+#define DISK_SPACE_IN_FILENAME 0x12
+#define DISK_SPACE_IN_EXT      0x13
+#define DISK_EXT_NOT_THREE     0x14
 
 _Packed struct fat12_entry_t{
 	int8_t filename[8];
@@ -93,7 +103,10 @@ static file_t  *_file_handle = 0;
 
 int8_t init_fs();
 int8_t load_file(const char *__s, file_t *_fhandle);
+int8_t create_file(const char *__s, uint16_t offset, uint16_t size);
+int8_t delete_file(const char *__s);
 int8_t get_entry_by_name(const char* __s, fat12_entry_t *__e);
+int8_t normal_to_fat12(const char* _n, char *_b);
 
 void   print_bpb();
 void   print_lba();
@@ -103,6 +116,7 @@ void   print_entry(fat12_entry_t *__e);
 void   print_cluster_list(uint16_t clusternum);
 void   free_file();
 
+uint16_t get_data_offset();
 
 /** ==================================================== **/
 
@@ -129,7 +143,8 @@ static int8_t fat12_load_root();
 static int8_t fat12_load_fat();
 static int8_t fat12_load_file_mem(const char *__n, uint16_t offset);
 static int8_t fat12_add_new_entry(fat12_entry_t *__e);
-int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e);
+static int8_t fat12_delete_file(const char *__n);
+static int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e, uint8_t force_write);
 static int8_t fat12_search_free_clusters(uint16_t *_fcl, uint8_t needed);
 /** ==================================================== **/
 #endif

@@ -1,4 +1,4 @@
-FILE bin/wstartup.o, bin/kernel.o, bin/io.o, bin/termio.o, bin/string.o, bin/fat12.o
+FILE bin/wstartup.o, bin/kernel.o, bin/io.o, bin/termio.o, bin/string.o, bin/fat12.o, bin/memory.o
 FORMAT RAW BIN 
 NAME bin/KERNEL.SYS 
 OPTION NODEFAULTLIBS, MAP=mapka, STACK=512

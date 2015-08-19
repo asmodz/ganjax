@@ -12,26 +12,61 @@ int8_t init_fs(){
 }
 
 int8_t load_file(const char *__s, file_t *_fhandle){
+    fat12_entry_t _ent;
+    static file_t _fbuff_;
+    int8_t return_code;
+    int16_t offset = 0x0000;
+    if( _file_handle != NULL )
+        return DISK_FSLOT_NON_EMPTY;
+    if(get_entry_by_name(__s, &_ent)){
+        if( (return_code = fat12_load_file_mem(_ent.filename, offset)) > 0)
+            return return_code;
+        else
+        {
+            _fbuff_.entry = _ent;
+            _fbuff_.data  = DATA_OFFSET + offset;
+            _file_handle = &_fbuff_;
+            (*_fhandle) = _fbuff_;
+            return DISK_OP_OK;
+        }
+    }   
+    else
+        return false;
+}
+
+int8_t create_file(const char *__s, uint16_t offset, uint16_t size){
 	fat12_entry_t _ent;
-	static file_t _fbuff_;
-	int8_t return_code;
-	int16_t offset = 0x0000;
-	if( _file_handle != NULL )
-		return DISK_FSLOT_NON_EMPTY;
-	if(get_entry_by_name(__s, &_ent)){
-		if( (return_code = fat12_load_file_mem(_ent.filename, offset)) > 0)
-			return return_code;
-		else
-		{
-			_fbuff_.entry = _ent;
-			_fbuff_.data  = DATA_OFFSET + offset;
-			_file_handle = &_fbuff_;
-			(*_fhandle) = _fbuff_;
-			return DISK_OP_OK;
-		}
-	}	
-	else
-		return false;
+	int8_t rc;
+	char name[11]; 
+	
+	if(size == 0)
+		return DISK_FILE_SIZE_IS_ZERO;
+	
+	if( (rc = normal_to_fat12(__s, name)) > 0)
+		return rc;
+	
+	if(get_entry_by_name(name, &_ent))
+		return DISK_ENTRY_OVERWRITE;
+	
+	memcpy( (char*)&_ent, name, 11);
+	_ent.file_size = size;
+	
+	if(( rc = fat12_create_new_file(offset, &_ent, false)) > 0)
+		return rc;
+	
+	return DISK_OP_OK;
+}
+
+int8_t delete_file(const char *__s){
+	int8_t rc;
+	char name[11];
+	
+	if( (rc = normal_to_fat12(__s, name)) > 0)
+		return rc;
+	if( (rc = fat12_delete_file(name)) > 0)
+		return rc;
+	
+	return DISK_OP_OK;
 }
 
 int8_t get_entry_by_name(const char* __s, fat12_entry_t *__e){
@@ -44,6 +79,40 @@ int8_t get_entry_by_name(const char* __s, fat12_entry_t *__e){
         }
     }
     return false;
+}
+
+int8_t normal_to_fat12(const char* _n, char* _b){
+	static char bn[8];
+	static char be[3];
+	int16_t posdot, cntdot, i, i2;
+	memset(bn, 0, 8); memset(be, 0, 8); memset(_b, ' ', 11);
+	posdot = strpos(_n, '.');
+	cntdot = strcnt(_n, '.');
+	if(cntdot != 1)
+		return DISK_MORE_DOTS;
+	if(posdot == -1)
+		return DISK_NOT_DOT;
+	if(posdot == 0)
+		return DISK_DOT_FIRST;
+	if(posdot > 7)
+		return DISK_DOT_PLUS_EIGHT;
+	
+	memcpy( bn, _n, posdot);
+	memcpy( be, _n + posdot +1, 3);
+	
+	if(strcnt(bn, ' '))
+		return DISK_SPACE_IN_FILENAME;
+	if(strcnt(be, ' '))
+		return DISK_SPACE_IN_EXT;
+	if(strlen(be) != 3)
+		return DISK_EXT_NOT_THREE;
+		
+	i2 = 0;
+	for(i=0;i<8;++i) _b[i] = bn[i];
+	for(i=0;i<8;++i) if(_b[i] == 0) _b[i] = ' ';
+	for(i=8;i<11;++i)_b[i] = be[i2++];
+	_b[11] = 0;
+	return DISK_OP_OK;
 }
 
 void print_bpb(){
@@ -136,11 +205,11 @@ void print_files(){
 }
 
 void print_cluster_list(uint16_t clusternum){
-	while(clusternum != FAT12_END_OF_CLUSTERS){
-		print_int(clusternum, 10, 0); putc(' ');
-		clusternum = fat12_get_fat_entry(clusternum);
-	}
-	eol();
+    while(clusternum != FAT12_END_OF_CLUSTERS){
+        print_int(clusternum, 10, 0); putc(' ');
+        clusternum = fat12_get_fat_entry(clusternum);
+    }
+    eol();
 }
 
 void print_entry(fat12_entry_t *__e){
@@ -155,7 +224,11 @@ void print_entry(fat12_entry_t *__e){
 }
 
 void free_file(){
-	_file_handle = NULL;
+    _file_handle = NULL;
+}
+
+uint16_t get_data_offset(){
+    return DATA_OFFSET;
 }
 
 /** ==================================================== **/
@@ -262,7 +335,7 @@ static uint16_t data_size(){
 }
 
 static uint16_t cluster_to_lba(uint16_t clusternum){
-	return data_lba() + clusternum - 2;
+    return data_lba() + clusternum - 2;
 }
 
 static uint16_t fat12_get_fat_entry(uint16_t clusternum){
@@ -272,16 +345,16 @@ static uint16_t fat12_get_fat_entry(uint16_t clusternum){
     offset =  (3 * (clusternum/2));
     switch(clusternum % 2) 
     {
-		case 0:
-			b1 = *(fat + offset);
-			b2 = *(fat + offset + 1);
-			value = ((0x0f & b2) << 8) | b1;
-		break;
-		case 1:
-			b1 = *(fat + offset + 1);
-			b2 = *(fat + offset + 2);
-			value = b2 << 4 | ((0xf0 & b1) >> 4);
-		break;
+        case 0:
+            b1 = *(fat + offset);
+            b2 = *(fat + offset + 1);
+            value = ((0x0f & b2) << 8) | b1;
+        break;
+        case 1:
+            b1 = *(fat + offset + 1);
+            b2 = *(fat + offset + 2);
+            value = b2 << 4 | ((0xf0 & b1) >> 4);
+        break;
     }
     return value;
 }
@@ -323,18 +396,18 @@ static void fat12_set_fat_entry(uint16_t clusternum, uint16_t value){
     offset = (3 * (clusternum/2));
     switch(clusternum % 2) 
     {
-		case 0:
-			p1 = fat + offset;
-			p2 = fat + offset + 1;
-			*p1 = (uint8_t)(0xff & value);
-			*p2 = (uint8_t)((0xf0 & (*p2)) | (0x0f & (value >> 8)));
-		break;
-		case 1:
-			p1 = fat + offset + 1;
-			p2 = fat + offset + 2;
-			*p1 = (uint8_t)((0x0f & (*p1)) | ((0x0f & value) << 4));
-			*p2 = (uint8_t)(0xff & (value >> 4));
-		break;
+        case 0:
+            p1 = fat + offset;
+            p2 = fat + offset + 1;
+            *p1 = (uint8_t)(0xff & value);
+            *p2 = (uint8_t)((0xf0 & (*p2)) | (0x0f & (value >> 8)));
+        break;
+        case 1:
+            p1 = fat + offset + 1;
+            p2 = fat + offset + 2;
+            *p1 = (uint8_t)((0x0f & (*p1)) | ((0x0f & value) << 4));
+            *p2 = (uint8_t)(0xff & (value >> 4));
+        break;
     }
 }
 
@@ -366,15 +439,15 @@ static int8_t fat12_load_fat(){
 
 static int8_t fat12_load_file_mem(const char *__n, uint16_t offset){
     fat12_entry_t ent;
-	if(get_entry_by_name(__n, &ent)){
-		uint16_t cluster_index = ent.first_cluster;
-		int8_t rcode;
-		while(cluster_index != FAT12_END_OF_CLUSTERS){
-			if( (rcode = floppy_rw_sectors(DATA_OFFSET + offset, cluster_to_lba(cluster_index), 1, IO_READ)) > 0)
-				return rcode;
-			offset += _bpb.bytes_per_sector;
-			cluster_index = fat12_get_fat_entry(cluster_index);
-		}
+    if(get_entry_by_name(__n, &ent)){
+        uint16_t cluster_index = ent.first_cluster;
+        int8_t rcode;
+        while(cluster_index != FAT12_END_OF_CLUSTERS){
+            if( (rcode = floppy_rw_sectors(DATA_OFFSET + offset, cluster_to_lba(cluster_index), 1, IO_READ)) > 0)
+                return rcode;
+            offset += _bpb.bytes_per_sector;
+            cluster_index = fat12_get_fat_entry(cluster_index);
+        }
         return DISK_OP_OK;
     }
     else 
@@ -395,70 +468,96 @@ static int8_t fat12_add_new_entry(fat12_entry_t *__e){
     return DISK_NO_SPC_FOR_ENT;
 }
 
-#define TINYDEBUG
-int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e){
-	int8_t rcode, i, list_cnt = 0;
-	static uint16_t free_list[32]; // 16kb
-	uint16_t clusters_needed;
-	
-	/** If file size is zero then not **/
-	if( (__e->file_size == 0) )
-		return DISK_FILE_SIZE_IS_ZERO;
-		
-	/** Clear clusterz **/
-	for(;i<32;++i) free_list[i] = 0x00;
-	
-	/** Calculate needed clusters for allocation **/
-	clusters_needed = (uint16_t) __e->file_size / _bpb.bytes_per_sector;
-	if( (int) __e->file_size % _bpb.bytes_per_sector > 0 )
-		clusters_needed++;
-	
-	puts("Need:"); print_int(clusters_needed, 10, 0);eol();
-	/** Search clusters in FAT **/
-	list_cnt = fat12_search_free_clusters(free_list, clusters_needed);
-	if(list_cnt != clusters_needed)
-		return DISK_NO_ENOUGH_SPACE;
-		
-	/** Set last cluster in table to EOC Mark **/
-	free_list[list_cnt] = FAT12_END_OF_CLUSTERS;
-	
-	/** Ok, we have enough clusters to save file **/
-	__e->first_cluster = free_list[0];
-	if( (rcode = fat12_add_new_entry(__e)) > 0)
-		return rcode;
-	
-	i=0;
-	for(;i<clusters_needed + 1;++i){
-		if(free_list[i] == FAT12_END_OF_CLUSTERS) break;
-		#ifdef TINYDEBUG
-			puts("Dla "); print_int(free_list[i], 10, 0);
-			puts(" Ustaw "); print_int(free_list[i+1], 10, 0);
-			eol();
-		#endif
-		fat12_set_fat_entry(free_list[i], free_list[i+1]);
-		if( (rcode = floppy_rw_sectors(DATA_OFFSET + offset, cluster_to_lba(free_list[i]), 1, IO_WRITE)) > 0){
-			/** If error, clear fucked clusters **/
-			for(;i<clusters_needed + 1;++i){
-				if(free_list[i] == FAT12_END_OF_CLUSTERS) break;
-				fat12_set_fat_entry(free_list[i], FAT12_FREE_CLUSTER);
+static int8_t fat12_delete_file(const char *__n){
+	uint8_t j = 0, i = 0;
+	for(;i<_bpb.max_files;++i){
+		fat12_entry_t _tmp = entries[i];
+		/** Ok, file exists **/
+		if(strncmp(_tmp.filename, __n, 11) == NULL){
+			uint16_t f_c = _tmp.first_cluster;
+			uint16_t c_c = 0, c_i = 15, c_next;
+			/** Filename to 0xe5 **/
+			for(j=0;j<11;++j)
+				entries[i].filename[j] = FAT12_ENTRY_FREE;
+			while(f_c != FAT12_END_OF_CLUSTERS)
+			{
+				/** Delete clusters from FAT but not zero clusters **/
+				c_next = fat12_get_fat_entry(f_c);
+				#ifdef TINYDEBUG
+					puts("Dla "); print_int(f_c, 10, 0); 
+					puts(" Ustawiam 0"); eol();
+				#endif
+				fat12_set_fat_entry(f_c, FAT12_CLUSTER_EMPTY);
+				f_c = c_next; 
 			}
-			/** Und exit with BIOS errcode **/
-			return rcode;
+			return DISK_OP_OK;
 		}
-		offset += _bpb.bytes_per_sector;
 	}
-	fat12_save_fat();
-	fat12_save_root();
-	return DISK_OP_OK;
+	return DISK_FILE_NOEXIST;
+}
+
+static int8_t fat12_create_new_file(uint16_t offset, fat12_entry_t *__e, uint8_t forcewrite){
+    int8_t rcode, i, list_cnt = 0;
+    static uint16_t free_list[32]; // 16kb
+    uint16_t clusters_needed;
+    
+    /** If file size is zero then not **/
+    if( (__e->file_size == 0) )
+        return DISK_FILE_SIZE_IS_ZERO;
+        
+    /** Clear clusterz **/
+    for(;i<32;++i) free_list[i] = 0x00;
+    
+    /** Calculate needed clusters for allocation **/
+    clusters_needed = (uint16_t) __e->file_size / _bpb.bytes_per_sector;
+    if( (int) __e->file_size % _bpb.bytes_per_sector > 0 )
+        clusters_needed++;
+    
+    puts("Need:"); print_int(clusters_needed, 10, 0);eol();
+    /** Search clusters in FAT **/
+    list_cnt = fat12_search_free_clusters(free_list, clusters_needed);
+    if(list_cnt != clusters_needed)
+        return DISK_NO_ENOUGH_SPACE;
+        
+    /** Set last cluster in table to EOC Mark **/
+    free_list[list_cnt] = FAT12_END_OF_CLUSTERS;
+    
+    /** Ok, we have enough clusters to save file **/
+    __e->first_cluster = free_list[0];
+    if( (rcode = fat12_add_new_entry(__e)) > 0 && forcewrite == false)
+            return rcode;
+    i=0;
+    for(;i<clusters_needed + 1;++i){
+        if(free_list[i] == FAT12_END_OF_CLUSTERS) break;
+        #ifdef TINYDEBUG
+            puts("Dla "); print_int(free_list[i], 10, 0);
+            puts(" Ustaw "); print_int(free_list[i+1], 10, 0);
+            eol();
+        #endif
+        fat12_set_fat_entry(free_list[i], free_list[i+1]);
+        if( (rcode = floppy_rw_sectors(DATA_OFFSET + offset, cluster_to_lba(free_list[i]), 1, IO_WRITE)) > 0){
+            /** If error, clear fucked clusters **/
+            for(;i<clusters_needed + 1;++i){
+                if(free_list[i] == FAT12_END_OF_CLUSTERS) break;
+                fat12_set_fat_entry(free_list[i], FAT12_FREE_CLUSTER);
+            }
+            /** Und exit with BIOS errcode **/
+            return rcode;
+        }
+        offset += _bpb.bytes_per_sector;
+    }
+    fat12_save_fat();
+    fat12_save_root();
+    return DISK_OP_OK;
 }
 
 static int8_t fat12_search_free_clusters(uint16_t *_fcl, uint8_t needed){
-	uint16_t i=2;
-	int8_t free=0;
-	for(;i< fat_size() * _bpb.bytes_per_sector;++i){
-		if(free == needed) return free;
-		if(fat12_get_fat_entry(i) == FAT12_FREE_CLUSTER)
-			_fcl[free++] = i;
-	}
-	return free;
+    uint16_t i=2;
+    int8_t free=0;
+    for(;i< fat_size() * _bpb.bytes_per_sector;++i){
+        if(free == needed) return free;
+        if(fat12_get_fat_entry(i) == FAT12_FREE_CLUSTER)
+            _fcl[free++] = i;
+    }
+    return free;
 }

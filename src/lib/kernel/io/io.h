@@ -17,7 +17,7 @@ void eol();
 void write_string_at(const char *__s, uint16_t x, uint16_t y, int8_t attribs);
 void fatal_error_box(const char *__s);
 
-void   get_string(char* __s);
+uint16_t   get_string(char* __s, uint16_t len, uint8_t withprompt);
 key_t  get_key(void);
 
 #endif

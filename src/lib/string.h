@@ -14,5 +14,6 @@ char* memset(char* __s, short __c, short __n);
 char* memcpy(char* __s, const char *__src, short __n);
 char* errmesg(char* __errmesg, char errcode);
 int   strncmp(const char *s1, const char *s2, short n);
-
+int   strcnt(const char *__s, char c);
+int   strpos(const char *__s, char c);
 #endif
