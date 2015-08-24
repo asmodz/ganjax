@@ -15,7 +15,7 @@ file_t fh;
 void kmain(void)
 {
 
-    
+    setup_interrupts();
     init_terminal();
     if((rc = init_fs()) > 0)
         puts("[KERNEL] FS INIT ERROR\r\n");

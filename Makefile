@@ -16,7 +16,7 @@ KERNEL_NAME=kernel.c
 KERNEL_FILE=kernel.o
 KERNEL_BIN=KERNEL.SYS
 #============================================
-WATCOM_CFLAGS=-0 -d0 -ms -s -wx -zl 
+WATCOM_CFLAGS=-0 -d0 -mc -s -wx -zl 
 WATCOM_BIN=$(WATCOM)/binl
 WATCOM_CC=$(WATCOM_BIN)/./wcc
 WATCOM_LINK=$(WATCOM_BIN)/./wlink
@@ -47,7 +47,7 @@ kernel_binary: kernel
 	
 internals:	_kernel_internal_io _kernel_internal_termio    \
             _kernel_internal_fat12 _kernel_internal_memory \
-            _kernel_internal_executor
+            _kernel_internal_executor _kernel_internal_int 
 			
 utils: _utils_stringlib
 
@@ -71,6 +71,10 @@ _kernel_internal_memory:
 _kernel_internal_executor:
 	@echo "=========================MEMO==============================="
 	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/executor.o $(LIB_PATH)/kernel/asm/exec.c
+	@echo "=========================MEMO==============================="
+_kernel_internal_int:
+	@echo "=========================MEMO==============================="
+	$(WATCOM_CC) $(WATCOM_CFLAGS) $(WLOG)/memory.errorz $(WOUT)/int.o $(LIB_PATH)/kernel/asm/interrupt.c
 	@echo "=========================MEMO==============================="
 #============================================
 _utils_stringlib:
